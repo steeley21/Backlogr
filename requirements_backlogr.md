@@ -4,7 +4,7 @@
 
 ---
 
-## Elevator pitch (1–4 sentences)
+## Elevator pitch 
 
 Backlogr is a social app for gamers to track what they play, rate and review games, and follow friends’ activity.  
 It exists to make gaming journaling simple **and** help you find your next great game with AI—based on your tastes, not just what’s trending.
@@ -19,7 +19,7 @@ It exists to make gaming journaling simple **and** help you find your next great
 
 ---
 
-## MVP feature scope (what will be implemented)
+## MVP feature scope 
 
 ### Social + content
 - Follow system (follow/unfollow)
@@ -152,7 +152,7 @@ Planned approach:
 
 ---
 
-## Data model (draft)
+## Data model 
 
 ### Naming rules
 - Primary key column naming: **TableNameId**
@@ -165,6 +165,7 @@ Planned approach:
 - **User**
   - **UserId** (PK) *(Identity key; stored as string or Guid depending on implementation)*
   - Email
+  - Username
   - DisplayName
   - FirstName *(optional)*
   - LastName *(optional)*
@@ -288,7 +289,7 @@ Planned approach:
 
 ---
 
-## Technical requirements (meets assignment expectations)
+## Technical requirements 
 
 - Front end + back end + database
 - AI is part of **core functionality** (recommendations)
