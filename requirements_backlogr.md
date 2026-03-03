@@ -345,3 +345,8 @@ Planned approach:
 - **M3:** Reviews + follow + feed + likes/comments
 - **M4:** Azure AI Search + embeddings + recommendations + semantic search
 - **M5:** Writing assistant + polish + testing push + bug bash
+
+
+## Ideas
+- Link gaming accounts (Steam, PSN, Xbox, Discord)
+  
