@@ -115,7 +115,7 @@ Planned approach:
 
 ## Tech stack
 
-### Front end
+### Front end (Nuxt App)
 - Vue 3
 - Vuetify 3
 - TypeScript (style guide enforced)
