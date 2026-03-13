@@ -23,4 +23,9 @@ public sealed class ApplicationUser : IdentityUser<Guid>
     public ICollection<ReviewLike> ReviewLikes { get; set; } = new List<ReviewLike>();
 
     public ICollection<ReviewComment> ReviewComments { get; set; } = new List<ReviewComment>();
+
+    public ICollection<Follow> FollowingUsers { get; set; } = new List<Follow>();
+
+    public ICollection<Follow> FollowerUsers { get; set; } = new List<Follow>();
+
 }

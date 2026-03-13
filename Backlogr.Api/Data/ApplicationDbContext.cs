@@ -31,6 +31,8 @@ public sealed class ApplicationDbContext
 
     public DbSet<ReviewComment> ReviewComments => Set<ReviewComment>();
 
+    public DbSet<Follow> Follows => Set<Follow>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -175,6 +177,24 @@ public sealed class ApplicationDbContext
                 .WithMany(r => r.ReviewComments)
                 .HasForeignKey(rc => rc.ReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Follow>(entity =>
+        {
+            entity.HasKey(f => f.FollowId);
+
+            entity.HasIndex(f => new { f.FollowerId, f.FollowingId })
+                .IsUnique();
+
+            entity.HasOne(f => f.Follower)
+                .WithMany(u => u.FollowingUsers)
+                .HasForeignKey(f => f.FollowerId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(f => f.Following)
+                .WithMany(u => u.FollowerUsers)
+                .HasForeignKey(f => f.FollowingId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
