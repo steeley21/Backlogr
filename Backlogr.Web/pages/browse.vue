@@ -9,6 +9,8 @@ import type { GameSummaryResponseDto } from '~/types/game'
 
 const route = useRoute()
 
+const fallbackCoverUrl = '/images/fallback-game-cover.svg'
+
 const games = ref<GameSummaryResponseDto[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -29,11 +31,6 @@ const headerRightText = computed(() => {
 
   return 'Discover games'
 })
-
-function buildFallbackCover(title: string): string {
-  const safeTitle = encodeURIComponent(title)
-  return `https://placehold.co/300x450/1c2228/f5f5f5?text=${safeTitle}`
-}
 
 function formatSubtitle(game: GameSummaryResponseDto): string {
   const parts: string[] = []
@@ -146,7 +143,7 @@ watch(
       >
         <GamePosterCard
           :title="game.title"
-          :cover-url="game.coverImageUrl ?? buildFallbackCover(game.title)"
+          :cover-url="game.coverImageUrl ?? fallbackCoverUrl"
           :subtitle="formatSubtitle(game)"
           :to="`/game/${game.gameId}`"
         />

@@ -26,6 +26,15 @@ const isAuthPage = computed(() => {
   return route.path === '/login' || route.path === '/register'
 })
 
+const currentGameId = computed(() => {
+  if (!route.path.startsWith('/game/')) {
+    return ''
+  }
+
+  const value = route.params.id
+  return typeof value === 'string' ? value : ''
+})
+
 const profileDisplayName = computed(() => {
   return authStore.displayName || authStore.userName || 'Account'
 })
@@ -72,6 +81,18 @@ async function submitSearch(): Promise<void> {
     path: '/browse',
     query: { q },
   })
+}
+
+async function handleLogClick(): Promise<void> {
+  if (currentGameId.value) {
+    await navigateTo({
+      path: '/log',
+      query: { gameId: currentGameId.value },
+    })
+    return
+  }
+
+  await navigateTo('/browse')
 }
 
 async function handleLogout(): Promise<void> {
@@ -122,11 +143,11 @@ async function handleLogout(): Promise<void> {
           />
 
           <v-btn
-            to="/log"
             color="primary"
             rounded="pill"
             class="text-none px-5 mr-3 log-btn"
             prepend-icon="mdi-plus"
+            @click="handleLogClick"
           >
             Log
           </v-btn>

@@ -19,6 +19,8 @@ const tabs: LibraryTab[] = [
   { label: 'Dropped', value: 'Dropped' },
 ]
 
+const fallbackCoverUrl = '/images/fallback-game-cover.svg'
+
 const activeTab = ref<LibraryStatus>('Backlog')
 const logs = ref<LibraryLogResponseDto[]>([])
 const isLoading = ref(false)
@@ -36,11 +38,6 @@ const headerRightText = computed(() => {
   const total = logs.value.length
   return `${total} game${total === 1 ? '' : 's'} in your library`
 })
-
-function buildFallbackCover(title: string): string {
-  const safeTitle = encodeURIComponent(title)
-  return `https://placehold.co/300x450/1c2228/f5f5f5?text=${safeTitle}`
-}
 
 function formatSubtitle(log: LibraryLogResponseDto): string {
   const parts: string[] = []
@@ -168,7 +165,7 @@ onMounted(async () => {
       >
         <GamePosterCard
           :title="log.gameTitle"
-          :cover-url="log.coverImageUrl ?? buildFallbackCover(log.gameTitle)"
+          :cover-url="log.coverImageUrl ?? fallbackCoverUrl"
           :subtitle="formatSubtitle(log)"
           :to="`/game/${log.gameId}`"
         />

@@ -6,6 +6,8 @@ import GamePosterCard from '~/components/game/GamePosterCard.vue'
 import { getRecommendations } from '~/services/aiService'
 import type { RecommendedGameDto } from '~/types/ai'
 
+const fallbackCoverUrl = '/images/fallback-game-cover.svg'
+
 const recs = ref<RecommendedGameDto[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -18,11 +20,6 @@ const headerRightText = computed(() => {
 
   return 'Personalized recommendations'
 })
-
-function buildFallbackCover(title: string): string {
-  const safeTitle = encodeURIComponent(title)
-  return `https://placehold.co/300x450/1c2228/f5f5f5?text=${safeTitle}`
-}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -153,7 +150,7 @@ onMounted(async () => {
         >
           <GamePosterCard
             :title="game.title"
-            :cover-url="game.coverImageUrl ?? buildFallbackCover(game.title)"
+            :cover-url="game.coverImageUrl ?? fallbackCoverUrl"
             :subtitle="game.why ?? 'Recommended for your taste profile'"
             :to="`/game/${game.gameId}`"
           />
