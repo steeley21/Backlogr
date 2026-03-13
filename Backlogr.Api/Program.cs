@@ -125,6 +125,8 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IReviewInteractionService, ReviewInteractionService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
+builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IIgdbService, StubIgdbService>();
 
 var app = builder.Build();
 

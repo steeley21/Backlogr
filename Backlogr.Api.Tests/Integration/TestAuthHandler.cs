@@ -35,9 +35,20 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId),
-            new(ClaimTypes.Name, "integration-test-user"),
-            new(ClaimTypes.Role, "User")
+            new(ClaimTypes.Name, "integration-test-user")
         };
+
+        var rolesHeader = Request.Headers.TryGetValue("X-Test-Roles", out var roleValues)
+            ? roleValues.ToString()
+            : "User";
+
+        var roles = rolesHeader
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);
