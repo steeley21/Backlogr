@@ -1,4 +1,5 @@
-﻿namespace Backlogr.Api.DTOs.Auth;
+﻿// /Dto/Auth/AuthResponseDto.cs
+namespace Backlogr.Api.DTOs.Auth;
 
 public sealed class AuthResponseDto
 {

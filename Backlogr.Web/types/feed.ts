@@ -1,3 +1,4 @@
+// types/feed.ts
 export type GameStatus = 'Playing' | 'Played' | 'Backlog' | 'Wishlist' | 'Dropped'
 
 export interface UserSummary {
