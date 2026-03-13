@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "@nuxt/eslint": "^1.15.2",
     "@pinia/nuxt": "^0.11.3",
     "axios": "^1.13.6",
     "nuxt": "^3.21.2",
@@ -22,6 +23,7 @@
     "vuetify-nuxt-module": "^1.0.0-alpha.5"
   },
   "devDependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@nuxt/test-utils": "^4.0.0",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^20.8.3",
