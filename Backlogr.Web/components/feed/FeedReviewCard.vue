@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { FeedReviewItem } from '~/types/feed'
+import StarRating from '~/components/shared/StarRating.vue'
 
 const props = defineProps<{ item: FeedReviewItem }>()
 
@@ -26,7 +28,7 @@ const dateLabel = computed(() => {
         </div>
 
         <div class="subline">
-          <StarRating :rating="item.rating" />
+          <StarRating v-if="typeof item.rating === 'number'" :rating="item.rating" />
           <span class="muted">{{ dateLabel }}</span>
         </div>
       </div>
@@ -103,6 +105,7 @@ const dateLabel = computed(() => {
   align-items: center;
   gap: 12px;
   margin-top: 6px;
+  flex-wrap: wrap;
 }
 
 .muted {

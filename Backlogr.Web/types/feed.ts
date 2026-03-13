@@ -1,14 +1,16 @@
-// types/feed.ts
+// /types/feed.ts
 export type GameStatus = 'Playing' | 'Played' | 'Backlog' | 'Wishlist' | 'Dropped'
+export type FeedItemType = 'GameLog' | 'Review'
 
 export interface UserSummary {
   userId: string
   displayName: string
+  userName: string
   avatarUrl?: string
 }
 
 export interface GameSummary {
-  gameId: number
+  gameId: string
   title: string
   coverUrl?: string
 }
@@ -18,9 +20,10 @@ export interface FeedReviewItem {
   id: string
   user: UserSummary
   game: GameSummary
-  rating: number // 0.0–5.0 in 0.5 steps
-  reviewedAt: string // ISO
+  rating?: number
+  reviewedAt: string
   text: string
+  hasSpoilers?: boolean
   likeCount: number
   commentCount: number
   liked?: boolean
@@ -35,7 +38,26 @@ export interface FeedLogItem {
   rating?: number
   platform?: string
   hours?: number
-  updatedAt: string // ISO
+  updatedAt: string
 }
 
 export type FeedItem = FeedReviewItem | FeedLogItem
+
+export interface FeedItemResponseDto {
+  itemType: FeedItemType
+  activityAt: string
+  userId: string
+  userName: string
+  displayName: string
+  gameId: string
+  gameTitle: string
+  coverImageUrl: string | null
+  gameLogId: string | null
+  reviewId: string | null
+  status: GameStatus | null
+  rating: number | null
+  platform: string | null
+  hours: number | null
+  reviewText: string | null
+  hasSpoilers: boolean | null
+}

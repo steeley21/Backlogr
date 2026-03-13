@@ -18,20 +18,20 @@ public sealed class FeedService : IFeedService
     {
         take = Math.Clamp(take, 1, 100);
 
-        var followedUserIds = await _dbContext.Follows
+        var activityUserIds = await _dbContext.Follows
             .AsNoTracking()
             .Where(f => f.FollowerId == userId)
             .Select(f => f.FollowingId)
             .ToListAsync();
 
-        if (followedUserIds.Count == 0)
-        {
-            return [];
-        }
+        activityUserIds.Add(userId);
+        activityUserIds = activityUserIds
+            .Distinct()
+            .ToList();
 
         var logItems = await _dbContext.GameLogs
             .AsNoTracking()
-            .Where(gl => followedUserIds.Contains(gl.UserId))
+            .Where(gl => activityUserIds.Contains(gl.UserId))
             .Include(gl => gl.User)
             .Include(gl => gl.Game)
             .Select(gl => new FeedItemResponseDto
@@ -57,7 +57,7 @@ public sealed class FeedService : IFeedService
 
         var reviewItems = await _dbContext.Reviews
             .AsNoTracking()
-            .Where(r => followedUserIds.Contains(r.UserId))
+            .Where(r => activityUserIds.Contains(r.UserId))
             .Include(r => r.User)
             .Include(r => r.Game)
             .Select(r => new FeedItemResponseDto
