@@ -127,6 +127,9 @@ builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IIgdbService, StubIgdbService>();
+builder.Services.AddScoped<IRecommendationService, StubRecommendationService>();
+builder.Services.AddScoped<IReviewAssistantService, StubReviewAssistantService>();
+builder.Services.AddScoped<ISemanticSearchService, StubSemanticSearchService>();
 
 var app = builder.Build();
 
