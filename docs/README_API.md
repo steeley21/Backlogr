@@ -2,9 +2,11 @@
 
 ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app inspired by Letterboxd.
 
-## Current status
+> **Document location:** this file now lives in the repo root `docs/` folder.
 
-The backend MVP surface is now working locally.
+## Current Status
+
+The backend MVP surface is working locally and is now powering the main local frontend flows in `Backlogr.Web`.
 
 Implemented so far:
 - ASP.NET Core Web API on **.NET 10**
@@ -46,17 +48,22 @@ Implemented so far:
   - `GET /api/ai/semantic-search`
 - Automated tests covering services, protected routes, and authenticated endpoint flows across implemented slices
 
+### Important current behavior
+- Feed now includes the **current user’s own activity** in addition to activity from followed users.
+- `GameLog.Rating` remains the source of truth for ratings.
+- IGDB and AI surfaces are still stub-backed for now.
+
 Not implemented yet:
 - Real IGDB API integration
 - Real Azure AI / Azure AI Search integration
 - Admin bootstrap flow
 - Global exception handling middleware
 - Structured logging / production diagnostics
-- Azure deployment wiring for the backend
+- Azure deployment wiring / production environment configuration
 
 ---
 
-## Tech stack
+## Tech Stack
 
 - **.NET 10**
 - **ASP.NET Core Web API**
@@ -69,7 +76,7 @@ Not implemented yet:
 
 ---
 
-## Project structure
+## Project Structure
 
 ```text
 Backlogr.Api/
@@ -113,7 +120,7 @@ Backlogr.Api/
 
 ---
 
-## Current domain model
+## Current Domain Model
 
 ### Identity
 - `ApplicationUser`
@@ -143,7 +150,7 @@ Backlogr.Api/
 
 ---
 
-## Auth model
+## Auth Model
 
 `ApplicationUser` extends `IdentityUser<Guid>` and currently includes:
 - `DisplayName`
@@ -157,7 +164,7 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 
 ---
 
-## Library / review model notes
+## Library / Review Model Notes
 
 `GameLog` currently supports:
 - `Status`
@@ -205,7 +212,7 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 
 ---
 
-## Local setup
+## Local Setup
 
 ### Prerequisites
 - .NET 10 SDK
@@ -288,7 +295,7 @@ Do **not** prefix it with `Bearer` in the Swagger auth dialog.
 
 ---
 
-## Development seed behavior
+## Development Seed Behavior
 
 In development, startup currently seeds:
 - roles: `User`, `Admin`
@@ -304,7 +311,7 @@ This is only intended for local development/testing until real game catalog + IG
 
 ---
 
-## Implemented endpoints
+## Implemented Endpoints
 
 ### Auth
 - `POST /api/auth/register`
@@ -385,18 +392,28 @@ dotnet test
 
 ---
 
-## Security / config notes
+## Security / Config Notes
 
 - Keep JWT keys, IGDB secrets, and connection strings out of tracked config files.
 - Use **User Secrets** for local development.
-- Production secrets should move to **Azure Key Vault** later.
+- Production secrets should move to Azure configuration / Key Vault.
 - Avatar handling is URL-only for now.
 - No file upload/storage is implemented yet.
 - Test authentication uses a header-driven fake auth handler only in the test host.
 
 ---
 
-## Current gaps / next steps
+## Deployment Notes
+
+Before deploying the frontend/backend pair to Azure:
+- move production connection strings and JWT settings into Azure configuration
+- update CORS to allow the deployed Static Web App origin, not just localhost
+- point the frontend `NUXT_PUBLIC_API_BASE` to the deployed API URL
+- validate auth, library, feed, AI stub, and game detail flows against deployed domains
+
+---
+
+## Current Gaps / Next Steps
 
 Recommended next backend work:
 1. Extract token generation into an auth/token service
@@ -405,7 +422,7 @@ Recommended next backend work:
 4. Add structured logging setup
 5. Replace IGDB stub with real IGDB integration
 6. Replace AI stubs with Azure AI / Azure AI Search implementations
-7. Add Azure deployment configuration and production-ready config handling
+7. Finalize Azure deployment configuration and production-ready config handling
 
 Technical cleanup still worth doing:
 - add pagination/cursor support for feed and games
