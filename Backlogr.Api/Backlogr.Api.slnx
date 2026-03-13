@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../Backlogr.Api.Tests/Backlogr.Api.Tests.csproj" />
+  <Project Path="Backlogr.Api.csproj" />
+</Solution>
