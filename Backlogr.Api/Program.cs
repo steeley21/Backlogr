@@ -110,11 +110,15 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? ["http://localhost:3000"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -138,7 +142,10 @@ await IdentityDataSeeder.SeedRolesAsync(app.Services);
 if (app.Environment.IsDevelopment())
 {
     await DevelopmentDataSeeder.SeedTestGameAsync(app.Services);
+}
 
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
+{
     app.UseSwagger();
     app.UseSwaggerUI();
 }
