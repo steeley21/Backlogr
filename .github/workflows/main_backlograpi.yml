@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'Backlogr.Api/**'
+      - 'Backlogr.ApiTests/**'
       - '.github/workflows/main_backlograpi.yml'
   workflow_dispatch:
 
@@ -20,9 +21,10 @@ jobs:
         working-directory: ./Backlogr.Api
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.x'
@@ -36,10 +38,10 @@ jobs:
       - name: Publish
         run: dotnet publish Backlogr.Api.csproj --configuration Release --output "${{ github.workspace }}/published-api" --no-build
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
+          name: backlogr-api
           path: ${{ github.workspace }}/published-api
 
   deploy:
@@ -50,10 +52,10 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
+          name: backlogr-api
           path: ./published-api
 
       - name: Login to Azure
@@ -64,7 +66,6 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A46373CA73164B949CFCF2FA8E47F75D }}
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'BacklogrAPI'
