@@ -4,6 +4,7 @@ using Backlogr.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backlogr.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260313083351_AddReviews")]
+    partial class AddReviews
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -289,60 +292,6 @@ namespace Backlogr.Api.Migrations
                     b.ToTable("Reviews");
                 });
 
-            modelBuilder.Entity("Backlogr.Api.Models.Entities.ReviewComment", b =>
-                {
-                    b.Property<Guid>("ReviewCommentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("ReviewId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("ReviewCommentId");
-
-                    b.HasIndex("ReviewId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ReviewComment");
-                });
-
-            modelBuilder.Entity("Backlogr.Api.Models.Entities.ReviewLike", b =>
-                {
-                    b.Property<Guid>("ReviewLikeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("ReviewId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("ReviewLikeId");
-
-                    b.HasIndex("ReviewId");
-
-                    b.HasIndex("UserId", "ReviewId")
-                        .IsUnique();
-
-                    b.ToTable("ReviewLike");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
@@ -484,44 +433,6 @@ namespace Backlogr.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Backlogr.Api.Models.Entities.ReviewComment", b =>
-                {
-                    b.HasOne("Backlogr.Api.Models.Entities.Review", "Review")
-                        .WithMany("ReviewComments")
-                        .HasForeignKey("ReviewId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Backlogr.Api.Models.Entities.ApplicationUser", "User")
-                        .WithMany("ReviewComments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Review");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Backlogr.Api.Models.Entities.ReviewLike", b =>
-                {
-                    b.HasOne("Backlogr.Api.Models.Entities.Review", "Review")
-                        .WithMany("ReviewLikes")
-                        .HasForeignKey("ReviewId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Backlogr.Api.Models.Entities.ApplicationUser", "User")
-                        .WithMany("ReviewLikes")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Review");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Backlogr.Api.Models.Entities.ApplicationRole", null)
@@ -577,10 +488,6 @@ namespace Backlogr.Api.Migrations
                 {
                     b.Navigation("GameLogs");
 
-                    b.Navigation("ReviewComments");
-
-                    b.Navigation("ReviewLikes");
-
                     b.Navigation("Reviews");
                 });
 
@@ -589,13 +496,6 @@ namespace Backlogr.Api.Migrations
                     b.Navigation("GameLogs");
 
                     b.Navigation("Reviews");
-                });
-
-            modelBuilder.Entity("Backlogr.Api.Models.Entities.Review", b =>
-                {
-                    b.Navigation("ReviewComments");
-
-                    b.Navigation("ReviewLikes");
                 });
 #pragma warning restore 612, 618
         }

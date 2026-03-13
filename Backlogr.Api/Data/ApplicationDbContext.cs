@@ -25,6 +25,12 @@ public sealed class ApplicationDbContext
 
     public DbSet<GameLog> GameLogs => Set<GameLog>();
 
+    public DbSet<Review> Reviews => Set<Review>();
+
+    public DbSet<ReviewLike> ReviewLikes => Set<ReviewLike>();
+
+    public DbSet<ReviewComment> ReviewComments => Set<ReviewComment>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -109,6 +115,65 @@ public sealed class ApplicationDbContext
             entity.HasOne(gl => gl.Game)
                 .WithMany(g => g.GameLogs)
                 .HasForeignKey(gl => gl.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Review>(entity =>
+        {
+            entity.HasKey(r => r.ReviewId);
+
+            entity.Property(r => r.Text)
+                .HasMaxLength(4000)
+                .IsRequired();
+
+            entity.HasIndex(r => new { r.UserId, r.GameId })
+                .IsUnique();
+
+            entity.HasOne(r => r.User)
+                .WithMany(u => u.Reviews)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Game)
+                .WithMany(g => g.Reviews)
+                .HasForeignKey(r => r.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ReviewLike>(entity =>
+        {
+            entity.HasKey(rl => rl.ReviewLikeId);
+
+            entity.HasIndex(rl => new { rl.UserId, rl.ReviewId })
+                .IsUnique();
+
+            entity.HasOne(rl => rl.User)
+                .WithMany(u => u.ReviewLikes)
+                .HasForeignKey(rl => rl.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(rl => rl.Review)
+                .WithMany(r => r.ReviewLikes)
+                .HasForeignKey(rl => rl.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ReviewComment>(entity =>
+        {
+            entity.HasKey(rc => rc.ReviewCommentId);
+
+            entity.Property(rc => rc.Text)
+                .HasMaxLength(2000)
+                .IsRequired();
+
+            entity.HasOne(rc => rc.User)
+                .WithMany(u => u.ReviewComments)
+                .HasForeignKey(rc => rc.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(rc => rc.Review)
+                .WithMany(r => r.ReviewComments)
+                .HasForeignKey(rc => rc.ReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

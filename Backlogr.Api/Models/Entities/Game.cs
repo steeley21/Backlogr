@@ -29,4 +29,6 @@ public sealed class Game
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<GameLog> GameLogs { get; set; } = new List<GameLog>();
+
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

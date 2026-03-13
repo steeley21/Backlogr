@@ -17,4 +17,10 @@ public sealed class ApplicationUser : IdentityUser<Guid>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<GameLog> GameLogs { get; set; } = new List<GameLog>();
+
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+    public ICollection<ReviewLike> ReviewLikes { get; set; } = new List<ReviewLike>();
+
+    public ICollection<ReviewComment> ReviewComments { get; set; } = new List<ReviewComment>();
 }
