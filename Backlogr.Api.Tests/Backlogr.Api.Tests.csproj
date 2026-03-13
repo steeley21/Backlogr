@@ -22,4 +22,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Backlogr.Api\Backlogr.Api.csproj" />
+  </ItemGroup>
+
 </Project>

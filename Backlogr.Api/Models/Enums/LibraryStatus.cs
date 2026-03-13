@@ -4,6 +4,7 @@ public enum LibraryStatus
 {
     Backlog = 0,
     Playing = 1,
-    Completed = 2,
-    Dropped = 3
+    Played = 2,
+    Wishlist = 3,
+    Dropped = 4
 }

@@ -89,6 +89,12 @@ public sealed class ApplicationDbContext
             entity.Property(gl => gl.Rating)
                 .HasPrecision(3, 1);
 
+            entity.Property(gl => gl.Platform)
+                .HasMaxLength(100);
+
+            entity.Property(gl => gl.Hours)
+                .HasPrecision(6, 1);
+
             entity.Property(gl => gl.Notes)
                 .HasMaxLength(2000);
 

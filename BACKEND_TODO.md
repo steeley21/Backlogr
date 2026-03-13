@@ -1,12 +1,13 @@
-# Backlogr TODO
+# Backlogr Backend TODO
 
 ## Current project state
 
 - `Backlogr.Web` is scaffolded.
 - Frontend is **not deployed yet**.
-- API project has been created as **`Backlogr.Api`**.
-- Test project has been created as **`Backlogr.Api.Tests`**.
-- Backend implementation has **not started yet**.
+- API project exists as **`Backlogr.Api`**.
+- Test project exists as **`Backlogr.Api.Tests`**.
+- Backend implementation is **actively in progress**.
+- Core backend foundation, auth, library endpoints, and initial automated tests are now working locally.
 
 ---
 
@@ -21,8 +22,8 @@
 - Keep architecture as a **modular monolith**, not a multi-project clean architecture split.
 
 ### Backend stack
-- **.NET 8 / ASP.NET Core Web API**
-- **Entity Framework Core 8**
+- **.NET 10 / ASP.NET Core Web API**
+- **Entity Framework Core 10**
 - **ASP.NET Core Identity**
 - **JWT auth**
 - **Role-based authorization**
@@ -107,33 +108,97 @@
 
 ---
 
+## Implemented so far
+
+### Foundation
+- [x] API project created
+- [x] Test project created
+- [x] Root `.gitignore` fixed and moved to repo root
+- [x] Core NuGet packages installed
+- [x] Solution builds cleanly
+- [x] User secrets initialized
+- [x] LocalDB connection configured
+- [x] Swagger/OpenAPI configured
+- [x] Swagger bearer auth support configured
+- [x] CORS configured for local frontend
+- [x] User secrets / JWT key kept out of repo
+
+### Identity / auth
+- [x] `ApplicationUser` with Guid key
+- [x] `ApplicationRole` with Guid key
+- [x] `ApplicationDbContext`
+- [x] Identity configured
+- [x] JWT auth configured
+- [x] Roles seeded: `User`, `Admin`
+- [x] `AuthController`
+- [x] `POST /api/auth/register`
+- [x] `POST /api/auth/login`
+- [x] `GET /api/auth/me`
+
+### Core domain model
+- [x] `Game`
+- [x] `GameLog`
+- [x] `LibraryStatus`
+- [ ] `Review`
+- [ ] `Follow`
+- [ ] `ReviewLike`
+- [ ] `ReviewComment`
+
+### Library slice
+- [x] `ILibraryService`
+- [x] `LibraryService`
+- [x] `LibraryController`
+- [x] `GET /api/library/me`
+- [x] `POST /api/library`
+- [x] `DELETE /api/library/{gameId}`
+- [x] Rating validation
+- [x] Ownership enforcement
+- [x] Development test game seeding for Swagger testing
+
+### Database
+- [x] Initial identity migration created and applied
+- [x] Game / GameLog migration created and applied
+- [x] GameLog alignment migration created and applied
+
+### Testing
+- [x] Library service unit tests
+- [x] Protected library route unauthorized tests
+- [x] Auth controller integration tests for register/login/duplicate/wrong password
+- [x] Authenticated `/me` integration coverage
+- [x] Authenticated library flow integration tests
+- [ ] Admin-only endpoint protection tests
+- [ ] Review service/controller tests
+- [ ] Follow/feed tests
+
+---
+
 ## Planned first-pass entities
 
 ### Identity / profile
-- `ApplicationUser`
+- [x] `ApplicationUser`
 
 ### Catalog
-- `Game`
+- [x] `Game`
 
 ### Library
-- `GameLog`
+- [x] `GameLog`
 
 ### Reviews / social
-- `Review`
-- `Follow`
-- `ReviewLike`
-- `ReviewComment`
+- [ ] `Review`
+- [ ] `Follow`
+- [ ] `ReviewLike`
+- [ ] `ReviewComment`
 
 ---
 
 ## Required constraints
 
-- `GameLog`: unique `(UserId, GameId)`
-- `Review`: unique `(UserId, GameId)`
-- `Follow`: unique `(FollowerId, FollowingId)`
-- `ReviewLike`: unique `(UserId, ReviewId)`
-- Prevent self-follow
-- Enforce ownership checks on update/delete actions
+- [x] `GameLog`: unique `(UserId, GameId)`
+- [ ] `Review`: unique `(UserId, GameId)`
+- [ ] `Follow`: unique `(FollowerId, FollowingId)`
+- [ ] `ReviewLike`: unique `(UserId, ReviewId)`
+- [ ] Prevent self-follow
+- [x] Enforce ownership checks on implemented library delete/update actions
 
 ---
 
@@ -141,11 +206,12 @@
 
 ```text
 BACKLOGR/
+├── .gitignore
+├── BACKEND_TODO.md
 ├── Backlogr.Web/
 ├── Backlogr.Api/
 ├── Backlogr.Api.Tests/
 ├── docs/
-├── Backlogr.sln
 ├── README.md
 └── requirements_backlogr.md
 ```
@@ -154,14 +220,11 @@ BACKLOGR/
 
 ```text
 Backlogr.Api/
+├── Common/
 ├── Controllers/
 ├── Data/
-│   ├── ApplicationDbContext.cs
-│   ├── Configurations/
-│   └── Migrations/
 ├── DTOs/
 ├── Extensions/
-├── Middleware/
 ├── Models/
 │   ├── Entities/
 │   └── Enums/
@@ -169,84 +232,86 @@ Backlogr.Api/
 ├── Services/
 │   ├── Implementations/
 │   └── Interfaces/
-├── Common/
-├── Mapping/
+├── Properties/
+├── appsettings.json
+├── appsettings.Development.json
 └── Program.cs
 ```
 
 ---
 
-## Initial setup checklist
+## Setup checklist
 
 ### Solution / project setup
 - [x] Create `Backlogr.Api`
 - [x] Create `Backlogr.Api.Tests`
-- [ ] Create / confirm `Backlogr.sln`
-- [ ] Add both projects to the solution
-- [ ] Add test project reference to API project
+- [x] Add both projects to the solution
+- [x] Add test project reference to API project
 
-### NuGet packages to install
-- [ ] `Microsoft.EntityFrameworkCore.SqlServer`
-- [ ] `Microsoft.EntityFrameworkCore.Design`
-- [ ] `Microsoft.EntityFrameworkCore.Tools`
-- [ ] `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
-- [ ] `Microsoft.AspNetCore.Authentication.JwtBearer`
-- [ ] `Swashbuckle.AspNetCore` *(if not already included)*
-- [ ] `Microsoft.AspNetCore.Mvc.Testing` *(test project)*
-- [ ] `FluentAssertions` *(test project)*
+### NuGet packages installed
+- [x] `Microsoft.EntityFrameworkCore.SqlServer`
+- [x] `Microsoft.EntityFrameworkCore.Design`
+- [x] `Microsoft.EntityFrameworkCore.Tools`
+- [x] `Microsoft.EntityFrameworkCore.InMemory` *(test project)*
+- [x] `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
+- [x] `Microsoft.AspNetCore.Authentication.JwtBearer`
+- [x] `Swashbuckle.AspNetCore`
+- [x] `Microsoft.AspNetCore.Mvc.Testing` *(test project)*
+- [x] `FluentAssertions` *(test project)*
+- [x] `Moq` *(test project)*
 
 ### Configuration
-- [ ] Set up `appsettings.Development.json`
-- [ ] Add LocalDB connection string
-- [ ] Add JWT settings
-- [ ] Add CORS settings for local frontend
-- [ ] Initialize user secrets
-- [ ] Move secrets out of committed config files
+- [x] Set up `appsettings.Development.json`
+- [x] Add LocalDB connection string via user secrets
+- [x] Add JWT settings via user secrets
+- [x] Add CORS settings for local frontend
+- [x] Initialize user secrets
+- [x] Move secrets out of committed config files
 
 ### Core backend plumbing
-- [ ] Create `ApplicationUser` with Guid identity key
-- [ ] Create `ApplicationDbContext`
-- [ ] Configure Identity
-- [ ] Configure JWT auth
-- [ ] Configure authorization policies / roles
-- [ ] Configure Swagger/OpenAPI
-- [ ] Configure CORS for `Backlogr.Web`
+- [x] Create `ApplicationUser` with Guid identity key
+- [x] Create `ApplicationDbContext`
+- [x] Configure Identity
+- [x] Configure JWT auth
+- [x] Configure authorization / role support
+- [x] Configure Swagger/OpenAPI
+- [x] Configure CORS for `Backlogr.Web`
 - [ ] Add global exception handling strategy
 - [ ] Add basic logging setup
 
 ---
 
-## First implementation order
+## Implementation status by phase
 
 ### Phase 1 — foundation
-- [ ] Confirm solution builds cleanly
-- [ ] Set up EF Core + Identity + JWT
-- [ ] Add initial options/config classes
-- [ ] Add first migration
-- [ ] Create database locally
-- [ ] Seed roles: `User`, `Admin`
+- [x] Confirm solution builds cleanly
+- [x] Set up EF Core + Identity + JWT
+- [x] Add initial options/config classes
+- [x] Add first migration
+- [x] Create database locally
+- [x] Seed roles: `User`, `Admin`
 - [ ] Add a way to seed an initial admin account
 
 ### Phase 2 — auth slice
-- [ ] Build `AuthController`
-- [ ] Implement:
-  - [ ] `POST /api/auth/register`
-  - [ ] `POST /api/auth/login`
-  - [ ] `GET /api/auth/me`
-- [ ] Create DTOs for auth flows
+- [x] Build `AuthController`
+- [x] Implement:
+  - [x] `POST /api/auth/register`
+  - [x] `POST /api/auth/login`
+  - [x] `GET /api/auth/me`
+- [x] Create DTOs for auth flows
 - [ ] Add auth service / token generation service
-- [ ] Test auth endpoints
+- [x] Test auth endpoints
 
 ### Phase 3 — core data model
-- [ ] Create entities:
-  - [ ] `Game`
-  - [ ] `GameLog`
+- [x] Create entities:
+  - [x] `Game`
+  - [x] `GameLog`
   - [ ] `Review`
   - [ ] `Follow`
   - [ ] `ReviewLike`
   - [ ] `ReviewComment`
-- [ ] Add EF configurations and constraints
-- [ ] Add migration for domain tables
+- [x] Add EF configurations and constraints for implemented entities
+- [x] Add migration for implemented domain tables
 
 ### Phase 4 — game/catalog slice
 - [ ] Build local `GamesController`
@@ -259,13 +324,13 @@ Backlogr.Api/
   - [ ] `POST /api/igdb/import/{igdbId}` *(admin only)*
 
 ### Phase 5 — library slice
-- [ ] Build library service
-- [ ] Implement:
-  - [ ] `GET /api/library/me`
-  - [ ] `POST /api/library`
-  - [ ] `DELETE /api/library/{gameId}`
-- [ ] Enforce rating validation
-- [ ] Enforce status rules and ownership
+- [x] Build library service
+- [x] Implement:
+  - [x] `GET /api/library/me`
+  - [x] `POST /api/library`
+  - [x] `DELETE /api/library/{gameId}`
+- [x] Enforce rating validation
+- [x] Enforce status rules and ownership
 
 ### Phase 6 — reviews + interactions
 - [ ] Build reviews service
@@ -309,34 +374,36 @@ Backlogr.Api/
 
 The first backend milestone is complete when all of the following are true:
 
-- [ ] API builds and runs locally
-- [ ] Swagger works
-- [ ] LocalDB connection works
-- [ ] Identity + JWT works
-- [ ] Roles exist (`User`, `Admin`)
-- [ ] Register/login/me endpoints work
-- [ ] Initial database migration is applied
-- [ ] Core domain tables exist
-- [ ] At least one auth happy-path integration test passes
-- [ ] At least one library happy-path test passes
+- [x] API builds and runs locally
+- [x] Swagger works
+- [x] LocalDB connection works
+- [x] Identity + JWT works
+- [x] Roles exist (`User`, `Admin`)
+- [x] Register/login/me endpoints work
+- [x] Initial database migration is applied
+- [x] Core domain tables for implemented slices exist
+- [x] At least one auth happy-path integration test passes
+- [x] At least one library happy-path test passes
+
+> **Status:** First backend milestone is complete.
 
 ---
 
-## Testing plan
+## Testing plan status
 
 ### Service-layer tests
-- [ ] Library update rules
-- [ ] Rating validation
+- [x] Library update rules
+- [x] Rating validation
 - [ ] Review creation/edit rules
 - [ ] Follow rules
 - [ ] Like/comment rules
-- [ ] Ownership / authorization rules
+- [x] Ownership / authorization rules for implemented library actions
 
 ### Controller / integration tests
-- [ ] Validation error status codes
-- [ ] Protected endpoint auth behavior
+- [x] Validation error status codes
+- [x] Protected endpoint auth behavior
 - [ ] Admin-only endpoint protection
-- [ ] WebApplicationFactory happy-path flows
+- [x] WebApplicationFactory happy-path flows for auth/library
 
 ---
 
@@ -349,15 +416,26 @@ The first backend milestone is complete when all of the following are true:
 - Do not overbuild the AI layer early.
 - Do not add file upload/storage for avatars right now.
 - Prefer stable, testable backend slices over trying to finish every endpoint at once.
+- Current development seeding includes:
+  - role seeding (`User`, `Admin`)
+  - one temporary development test game for library endpoint testing
 
 ---
 
 ## Next immediate step
 
-**Next step when work begins:**
-1. Confirm the solution file and project references.
-2. Install core NuGet packages.
-3. Set up Identity + EF Core + LocalDB.
-4. Create `ApplicationUser` and `ApplicationDbContext`.
-5. Wire JWT auth and Swagger.
-6. Add the first migration.
+### Recommended next feature slice
+1. Create `Review` entity and DTOs.
+2. Add EF configuration + migration for reviews.
+3. Build review service and controller.
+4. Implement:
+   - `POST /api/reviews`
+   - `PUT /api/reviews/{reviewId}`
+   - `DELETE /api/reviews/{reviewId}`
+5. Add review service tests and review integration tests.
+
+### Cleanup / technical debt after that
+- Extract token generation into an auth/token service.
+- Add admin bootstrap strategy.
+- Add global exception handling middleware / strategy.
+- Add structured logging setup.

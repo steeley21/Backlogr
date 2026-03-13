@@ -14,9 +14,13 @@ public sealed class GameLog
 
     public decimal? Rating { get; set; }
 
-    public DateTime? StartedOn { get; set; }
+    public string? Platform { get; set; }
 
-    public DateTime? CompletedOn { get; set; }
+    public decimal? Hours { get; set; }
+
+    public DateTime? StartedAt { get; set; }
+
+    public DateTime? FinishedAt { get; set; }
 
     public string? Notes { get; set; }
 

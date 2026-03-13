@@ -140,7 +140,14 @@ public sealed class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult<MeResponseDto>> Me()
     {
-        var user = await _userManager.GetUserAsync(User);
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
         if (user is null)
         {
             return Unauthorized();
@@ -160,6 +167,21 @@ public sealed class AuthController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var userIdValue =
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            User.FindFirstValue(JwtRegisteredClaimNames.Sub) ??
+            User.FindFirstValue("sub");
+
+        if (Guid.TryParse(userIdValue, out var userId))
+        {
+            return userId;
+        }
+
+        return null;
     }
 
     private AuthResponseDto BuildAuthResponse(ApplicationUser user, IList<string> roles)

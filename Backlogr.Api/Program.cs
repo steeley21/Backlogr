@@ -7,6 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
+using Backlogr.Api.Services.Interfaces;
+using Backlogr.Api.Services.Implementations;
+using System.Text.Json.Serialization;
+using Backlogr.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,11 +32,19 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Key) ||
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
+    options.UseInlineDefinitionsForEnums();
+    options.SchemaFilter<EnumDescriptionSchemaFilter>();
+
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Backlogr.Api",
@@ -108,12 +120,16 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<ILibraryService, LibraryService>();
+
 var app = builder.Build();
 
 await IdentityDataSeeder.SeedRolesAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
+    await DevelopmentDataSeeder.SeedTestGameAsync(app.Services);
+
     app.UseSwagger();
     app.UseSwaggerUI();
 }
@@ -128,3 +144,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program
+{
+}
