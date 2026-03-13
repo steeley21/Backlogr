@@ -4,7 +4,7 @@ ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app 
 
 ## Current status
 
-The backend foundation is now working locally.
+The backend MVP surface is now working locally.
 
 Implemented so far:
 - ASP.NET Core Web API on **.NET 10**
@@ -12,6 +12,14 @@ Implemented so far:
 - ASP.NET Core Identity with **Guid** keys
 - JWT authentication
 - Role seeding for `User` and `Admin`
+- Swagger/OpenAPI with bearer auth support
+- CORS configured for local frontend development
+- Local game catalog endpoints:
+  - `GET /api/games`
+  - `GET /api/games/{gameId}`
+- IGDB stub endpoints:
+  - `GET /api/igdb/search`
+  - `POST /api/igdb/import/{igdbId}` *(admin only)*
 - Auth endpoints:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
@@ -20,16 +28,31 @@ Implemented so far:
   - `GET /api/library/me`
   - `POST /api/library`
   - `DELETE /api/library/{gameId}`
-- `Game` and `GameLog` domain models
-- Swagger/OpenAPI with bearer auth support
-- Automated tests for auth and library flows
+- Review endpoints:
+  - `POST /api/reviews`
+  - `PUT /api/reviews/{reviewId}`
+  - `DELETE /api/reviews/{reviewId}`
+  - `POST /api/reviews/{reviewId}/like`
+  - `DELETE /api/reviews/{reviewId}/like`
+  - `POST /api/reviews/{reviewId}/comments`
+  - `DELETE /api/comments/{reviewCommentId}`
+- Follow/feed endpoints:
+  - `POST /api/follows/{userId}`
+  - `DELETE /api/follows/{userId}`
+  - `GET /api/feed`
+- AI stub endpoints:
+  - `POST /api/ai/recommendations`
+  - `POST /api/ai/review-assistant`
+  - `GET /api/ai/semantic-search`
+- Automated tests covering services, protected routes, and authenticated endpoint flows across implemented slices
 
 Not implemented yet:
-- Review/social entities and endpoints
-- Game catalog endpoints
-- IGDB integration
-- Feed/follow features
-- AI/recommendation/vector search features
+- Real IGDB API integration
+- Real Azure AI / Azure AI Search integration
+- Admin bootstrap flow
+- Global exception handling middleware
+- Structured logging / production diagnostics
+- Azure deployment wiring for the backend
 
 ---
 
@@ -52,15 +75,27 @@ Not implemented yet:
 Backlogr.Api/
 ├── Common/
 ├── Controllers/
+│   ├── AiController.cs
 │   ├── AuthController.cs
-│   └── LibraryController.cs
+│   ├── CommentsController.cs
+│   ├── FeedController.cs
+│   ├── FollowsController.cs
+│   ├── GamesController.cs
+│   ├── IgdbController.cs
+│   ├── LibraryController.cs
+│   └── ReviewsController.cs
 ├── Data/
 │   ├── ApplicationDbContext.cs
 │   ├── DevelopmentDataSeeder.cs
 │   └── IdentityDataSeeder.cs
 ├── DTOs/
+│   ├── AI/
 │   ├── Auth/
-│   └── Library/
+│   ├── Feed/
+│   ├── Games/
+│   ├── Igdb/
+│   ├── Library/
+│   └── Reviews/
 ├── Extensions/
 ├── Migrations/
 ├── Models/
@@ -91,8 +126,19 @@ Backlogr.Api/
 - `GameLog`
 - `LibraryStatus`
 
+### Reviews / interactions
+- `Review`
+- `ReviewLike`
+- `ReviewComment`
+
+### Social
+- `Follow`
+
 ### Implemented constraints
 - `GameLog` unique index on `(UserId, GameId)`
+- `Review` unique index on `(UserId, GameId)`
+- `Follow` unique index on `(FollowerId, FollowingId)`
+- `ReviewLike` unique index on `(UserId, ReviewId)`
 - `Game.IgdbId` unique filtered index when present
 
 ---
@@ -111,7 +157,7 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 
 ---
 
-## Library model
+## Library / review model notes
 
 `GameLog` currently supports:
 - `Status`
@@ -136,6 +182,26 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 - `Hours` cannot be negative
 - `FinishedAt` cannot be earlier than `StartedAt`
 - `FinishedAt` is required when status is `Played`
+
+### Review rules
+- one review per `(UserId, GameId)`
+- `Review` stores text + spoiler flag only
+- `GameLog.Rating` is the source of truth for rating
+- review text is required
+- review text max length is `4000`
+
+### Review interaction rules
+- likes are idempotent
+- one like per `(UserId, ReviewId)`
+- comment text is required
+- comment text max length is `2000`
+- comment delete is owner-or-admin
+- review delete cascades to likes/comments
+
+### Follow rules
+- no self-follow
+- duplicate follow is treated as a no-op
+- unfollow missing relationship is treated as a no-op
 
 ---
 
@@ -198,6 +264,9 @@ Current migrations:
 - `InitialIdentitySetup`
 - `AddGamesAndGameLogs`
 - `AlignGameLogWithLibraryRequirements`
+- `AddReviews`
+- `AddReviewLikesAndComments`
+- `AddFollows`
 
 ---
 
@@ -223,7 +292,7 @@ Do **not** prefix it with `Bearer` in the Swagger auth dialog.
 
 In development, startup currently seeds:
 - roles: `User`, `Admin`
-- one temporary test game for library endpoint testing
+- one temporary test game for local development/testing
 
 Current seeded test game id:
 
@@ -231,7 +300,7 @@ Current seeded test game id:
 11111111-1111-1111-1111-111111111111
 ```
 
-This is only intended for local development/testing until real game catalog endpoints and IGDB import are implemented.
+This is only intended for local development/testing until real game catalog + IGDB integration is in place.
 
 ---
 
@@ -242,10 +311,41 @@ This is only intended for local development/testing until real game catalog endp
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 
+### Games
+- `GET /api/games`
+- `GET /api/games/{gameId}`
+
+### IGDB (stub)
+- `GET /api/igdb/search`
+- `POST /api/igdb/import/{igdbId}` *(admin only)*
+
 ### Library
 - `GET /api/library/me`
 - `POST /api/library`
 - `DELETE /api/library/{gameId}`
+
+### Reviews
+- `POST /api/reviews`
+- `PUT /api/reviews/{reviewId}`
+- `DELETE /api/reviews/{reviewId}`
+- `POST /api/reviews/{reviewId}/like`
+- `DELETE /api/reviews/{reviewId}/like`
+- `POST /api/reviews/{reviewId}/comments`
+
+### Comments
+- `DELETE /api/comments/{reviewCommentId}`
+
+### Follows
+- `POST /api/follows/{userId}`
+- `DELETE /api/follows/{userId}`
+
+### Feed
+- `GET /api/feed`
+
+### AI (stub)
+- `POST /api/ai/recommendations`
+- `POST /api/ai/review-assistant`
+- `GET /api/ai/semantic-search`
 
 ---
 
@@ -254,16 +354,28 @@ This is only intended for local development/testing until real game catalog endp
 The backend test project is `Backlogr.Api.Tests`.
 
 Current automated coverage includes:
+- auth integration tests
 - library service tests
-- unauthorized library route tests
+- library unauthorized route tests
 - authenticated library flow tests
-- auth integration tests for:
-  - register
-  - login by username
-  - login by email
-  - duplicate email rejection
-  - wrong password rejection
-  - authenticated `/api/auth/me` coverage
+- review service tests
+- review unauthorized route tests
+- authenticated review flow tests
+- review interaction service tests
+- review interaction unauthorized route tests
+- authenticated review interaction flow tests
+- follow service tests
+- follow unauthorized route tests
+- authenticated follow flow tests
+- feed service tests
+- feed unauthorized route tests
+- authenticated feed flow tests
+- game service tests
+- games controller tests
+- IGDB auth/role/flow tests
+- AI stub service tests
+- AI unauthorized route tests
+- authenticated AI flow tests
 
 Run tests from `Backlogr.Api` or repo root:
 
@@ -280,23 +392,23 @@ dotnet test
 - Production secrets should move to **Azure Key Vault** later.
 - Avatar handling is URL-only for now.
 - No file upload/storage is implemented yet.
+- Test authentication uses a header-driven fake auth handler only in the test host.
 
 ---
 
 ## Current gaps / next steps
 
-Recommended next backend feature slice:
-1. Add `Review` entity and migration
-2. Build review DTOs, service, and controller
-3. Implement:
-   - `POST /api/reviews`
-   - `PUT /api/reviews/{reviewId}`
-   - `DELETE /api/reviews/{reviewId}`
-4. Add review unit/integration tests
+Recommended next backend work:
+1. Extract token generation into an auth/token service
+2. Add an admin bootstrap strategy
+3. Add global exception handling middleware / strategy
+4. Add structured logging setup
+5. Replace IGDB stub with real IGDB integration
+6. Replace AI stubs with Azure AI / Azure AI Search implementations
+7. Add Azure deployment configuration and production-ready config handling
 
 Technical cleanup still worth doing:
-- extract token generation into an auth service
-- add admin bootstrap flow
-- add global exception handling
-- add structured logging
-- add game/catalog endpoints
+- add pagination/cursor support for feed and games
+- add richer game page/community queries
+- add admin moderation endpoints
+- add consistent problem-details/error response strategy

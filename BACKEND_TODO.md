@@ -6,8 +6,8 @@
 - Frontend is **not deployed yet**.
 - API project exists as **`Backlogr.Api`**.
 - Test project exists as **`Backlogr.Api.Tests`**.
-- Backend implementation is **actively in progress**.
-- Core backend foundation, auth, library endpoints, and initial automated tests are now working locally.
+- Backend implementation is **well underway**.
+- Core backend slices, test coverage, and stubbed external seams are now working locally.
 
 ---
 
@@ -47,11 +47,13 @@
 - **Authenticated users can search IGDB**.
 - **Admin only can import IGDB games into local cache**.
 - Imported games are cached locally and used for app-facing game data.
+- Use a **stub IGDB service first**, then replace it later.
 
 ### AI decisions
-- AI features are required by the final project, but will be implemented **later**.
+- AI is required by the final project.
 - AI endpoints should be **stubbed first**.
 - Semantic/vector search and recommendation work come after core app functionality.
+- Current AI endpoints are **stub implementations**, not production integrations.
 
 ---
 
@@ -72,7 +74,7 @@
 
 ### Games
 - Local cached `Game` records
-- Game detail endpoint
+- Game list/detail endpoints
 - IGDB search endpoint
 - Admin-only IGDB import endpoint
 
@@ -101,10 +103,10 @@
 - Follow/unfollow users
 - Feed of logs + reviews from followed users
 
-### AI later
-- Recommendations endpoint
-- Review assistant endpoint
-- Semantic search endpoint
+### AI
+- Recommendations endpoint *(stub currently)*
+- Review assistant endpoint *(stub currently)*
+- Semantic search endpoint *(stub currently)*
 
 ---
 
@@ -120,6 +122,7 @@
 - [x] LocalDB connection configured
 - [x] Swagger/OpenAPI configured
 - [x] Swagger bearer auth support configured
+- [x] Swagger enum display improvements configured
 - [x] CORS configured for local frontend
 - [x] User secrets / JWT key kept out of repo
 
@@ -139,10 +142,22 @@
 - [x] `Game`
 - [x] `GameLog`
 - [x] `LibraryStatus`
-- [ ] `Review`
-- [ ] `Follow`
-- [ ] `ReviewLike`
-- [ ] `ReviewComment`
+- [x] `Review`
+- [x] `Follow`
+- [x] `ReviewLike`
+- [x] `ReviewComment`
+
+### Games / IGDB
+- [x] `IGameService`
+- [x] `GameService`
+- [x] `GamesController`
+- [x] `GET /api/games`
+- [x] `GET /api/games/{gameId}`
+- [x] `IIgdbService`
+- [x] `StubIgdbService`
+- [x] `IgdbController`
+- [x] `GET /api/igdb/search`
+- [x] `POST /api/igdb/import/{igdbId}` *(admin only)*
 
 ### Library slice
 - [x] `ILibraryService`
@@ -153,22 +168,67 @@
 - [x] `DELETE /api/library/{gameId}`
 - [x] Rating validation
 - [x] Ownership enforcement
-- [x] Development test game seeding for Swagger testing
+- [x] Development test game seeding for Swagger/testing
+
+### Review slice
+- [x] `IReviewService`
+- [x] `ReviewService`
+- [x] `ReviewsController`
+- [x] `POST /api/reviews`
+- [x] `PUT /api/reviews/{reviewId}`
+- [x] `DELETE /api/reviews/{reviewId}`
+
+### Review interactions
+- [x] `IReviewInteractionService`
+- [x] `ReviewInteractionService`
+- [x] `CommentsController`
+- [x] `POST /api/reviews/{reviewId}/like`
+- [x] `DELETE /api/reviews/{reviewId}/like`
+- [x] `POST /api/reviews/{reviewId}/comments`
+- [x] `DELETE /api/comments/{reviewCommentId}`
+
+### Follow / feed
+- [x] `IFollowService`
+- [x] `FollowService`
+- [x] `FollowsController`
+- [x] `IFeedService`
+- [x] `FeedService`
+- [x] `FeedController`
+- [x] `POST /api/follows/{userId}`
+- [x] `DELETE /api/follows/{userId}`
+- [x] `GET /api/feed`
+
+### AI stubs
+- [x] `IRecommendationService`
+- [x] `IReviewAssistantService`
+- [ ] `IEmbeddingService`
+- [x] `ISemanticSearchService`
+- [x] `StubRecommendationService`
+- [x] `StubReviewAssistantService`
+- [x] `StubSemanticSearchService`
+- [x] `AiController`
+- [x] `POST /api/ai/recommendations`
+- [x] `POST /api/ai/review-assistant`
+- [x] `GET /api/ai/semantic-search`
 
 ### Database
 - [x] Initial identity migration created and applied
 - [x] Game / GameLog migration created and applied
 - [x] GameLog alignment migration created and applied
+- [x] Review migration created and applied
+- [x] ReviewLike / ReviewComment migration created and applied
+- [x] Follow migration created and applied
 
 ### Testing
-- [x] Library service unit tests
-- [x] Protected library route unauthorized tests
-- [x] Auth controller integration tests for register/login/duplicate/wrong password
-- [x] Authenticated `/me` integration coverage
-- [x] Authenticated library flow integration tests
-- [ ] Admin-only endpoint protection tests
-- [ ] Review service/controller tests
-- [ ] Follow/feed tests
+- [x] Auth integration tests
+- [x] Library service + route + flow tests
+- [x] Review service + route + flow tests
+- [x] Review interaction service + route + flow tests
+- [x] Follow service + route + flow tests
+- [x] Feed service + route + flow tests
+- [x] Game service + controller tests
+- [x] IGDB auth/role/flow tests
+- [x] AI stub service + route + flow tests
 
 ---
 
@@ -184,21 +244,21 @@
 - [x] `GameLog`
 
 ### Reviews / social
-- [ ] `Review`
-- [ ] `Follow`
-- [ ] `ReviewLike`
-- [ ] `ReviewComment`
+- [x] `Review`
+- [x] `Follow`
+- [x] `ReviewLike`
+- [x] `ReviewComment`
 
 ---
 
 ## Required constraints
 
 - [x] `GameLog`: unique `(UserId, GameId)`
-- [ ] `Review`: unique `(UserId, GameId)`
-- [ ] `Follow`: unique `(FollowerId, FollowingId)`
-- [ ] `ReviewLike`: unique `(UserId, ReviewId)`
-- [ ] Prevent self-follow
-- [x] Enforce ownership checks on implemented library delete/update actions
+- [x] `Review`: unique `(UserId, GameId)`
+- [x] `Follow`: unique `(FollowerId, FollowingId)`
+- [x] `ReviewLike`: unique `(UserId, ReviewId)`
+- [x] Prevent self-follow
+- [x] Enforce ownership checks on update/delete actions for implemented slices
 
 ---
 
@@ -306,22 +366,22 @@ Backlogr.Api/
 - [x] Create entities:
   - [x] `Game`
   - [x] `GameLog`
-  - [ ] `Review`
-  - [ ] `Follow`
-  - [ ] `ReviewLike`
-  - [ ] `ReviewComment`
-- [x] Add EF configurations and constraints for implemented entities
-- [x] Add migration for implemented domain tables
+  - [x] `Review`
+  - [x] `Follow`
+  - [x] `ReviewLike`
+  - [x] `ReviewComment`
+- [x] Add EF configurations and constraints
+- [x] Add migrations for domain tables
 
 ### Phase 4 — game/catalog slice
-- [ ] Build local `GamesController`
-- [ ] Build IGDB integration service interface
-- [ ] Stub IGDB service implementation first
-- [ ] Implement:
-  - [ ] `GET /api/games`
-  - [ ] `GET /api/games/{gameId}`
-  - [ ] `GET /api/igdb/search`
-  - [ ] `POST /api/igdb/import/{igdbId}` *(admin only)*
+- [x] Build local `GamesController`
+- [x] Build IGDB integration service interface
+- [x] Stub IGDB service implementation first
+- [x] Implement:
+  - [x] `GET /api/games`
+  - [x] `GET /api/games/{gameId}`
+  - [x] `GET /api/igdb/search`
+  - [x] `POST /api/igdb/import/{igdbId}` *(admin only)*
 
 ### Phase 5 — library slice
 - [x] Build library service
@@ -333,33 +393,33 @@ Backlogr.Api/
 - [x] Enforce status rules and ownership
 
 ### Phase 6 — reviews + interactions
-- [ ] Build reviews service
-- [ ] Implement:
-  - [ ] `POST /api/reviews`
-  - [ ] `PUT /api/reviews/{reviewId}`
-  - [ ] `DELETE /api/reviews/{reviewId}`
-  - [ ] `POST /api/reviews/{reviewId}/like`
-  - [ ] `DELETE /api/reviews/{reviewId}/like`
-  - [ ] `POST /api/reviews/{reviewId}/comments`
-  - [ ] `DELETE /api/comments/{reviewCommentId}`
+- [x] Build reviews service
+- [x] Implement:
+  - [x] `POST /api/reviews`
+  - [x] `PUT /api/reviews/{reviewId}`
+  - [x] `DELETE /api/reviews/{reviewId}`
+  - [x] `POST /api/reviews/{reviewId}/like`
+  - [x] `DELETE /api/reviews/{reviewId}/like`
+  - [x] `POST /api/reviews/{reviewId}/comments`
+  - [x] `DELETE /api/comments/{reviewCommentId}`
 
 ### Phase 7 — follows + feed
-- [ ] Build follow/feed services
-- [ ] Implement:
-  - [ ] `GET /api/feed`
-  - [ ] `POST /api/follows/{userId}`
-  - [ ] `DELETE /api/follows/{userId}`
+- [x] Build follow/feed services
+- [x] Implement:
+  - [x] `GET /api/feed`
+  - [x] `POST /api/follows/{userId}`
+  - [x] `DELETE /api/follows/{userId}`
 
 ### Phase 8 — AI stubs
-- [ ] Add interfaces:
-  - [ ] `IRecommendationService`
-  - [ ] `IReviewAssistantService`
+- [x] Add interfaces:
+  - [x] `IRecommendationService`
+  - [x] `IReviewAssistantService`
   - [ ] `IEmbeddingService`
-  - [ ] `ISemanticSearchService`
-- [ ] Add stubbed endpoints:
-  - [ ] `POST /api/ai/recommendations`
-  - [ ] `POST /api/ai/review-assistant`
-  - [ ] `GET /api/ai/semantic-search`
+  - [x] `ISemanticSearchService`
+- [x] Add stubbed endpoints:
+  - [x] `POST /api/ai/recommendations`
+  - [x] `POST /api/ai/review-assistant`
+  - [x] `GET /api/ai/semantic-search`
 
 ### Phase 9 — Azure integration later
 - [ ] Replace stubs with Azure AI / Azure AI Search implementations
@@ -370,10 +430,9 @@ Backlogr.Api/
 
 ---
 
-## First milestone definition
+## Milestone status
 
-The first backend milestone is complete when all of the following are true:
-
+### First backend milestone
 - [x] API builds and runs locally
 - [x] Swagger works
 - [x] LocalDB connection works
@@ -387,6 +446,11 @@ The first backend milestone is complete when all of the following are true:
 
 > **Status:** First backend milestone is complete.
 
+### Current backend MVP status
+- [x] Core social/logging/catalog/auth endpoints are implemented locally
+- [x] IGDB and AI seams are stubbed
+- [x] Automated tests pass across implemented backend slices
+
 ---
 
 ## Testing plan status
@@ -394,16 +458,19 @@ The first backend milestone is complete when all of the following are true:
 ### Service-layer tests
 - [x] Library update rules
 - [x] Rating validation
-- [ ] Review creation/edit rules
-- [ ] Follow rules
-- [ ] Like/comment rules
-- [x] Ownership / authorization rules for implemented library actions
+- [x] Review creation/edit rules
+- [x] Follow rules
+- [x] Like/comment rules
+- [x] Ownership / authorization rules for implemented slices
+- [x] Feed aggregation rules
+- [x] Game search/detail rules
+- [x] AI stub behavior rules
 
 ### Controller / integration tests
 - [x] Validation error status codes
 - [x] Protected endpoint auth behavior
-- [ ] Admin-only endpoint protection
-- [x] WebApplicationFactory happy-path flows for auth/library
+- [x] Admin-only endpoint protection
+- [x] WebApplicationFactory happy-path flows for implemented slices
 
 ---
 
@@ -418,24 +485,22 @@ The first backend milestone is complete when all of the following are true:
 - Prefer stable, testable backend slices over trying to finish every endpoint at once.
 - Current development seeding includes:
   - role seeding (`User`, `Admin`)
-  - one temporary development test game for library endpoint testing
+  - one temporary development test game for local testing
 
 ---
 
 ## Next immediate step
 
-### Recommended next feature slice
-1. Create `Review` entity and DTOs.
-2. Add EF configuration + migration for reviews.
-3. Build review service and controller.
-4. Implement:
-   - `POST /api/reviews`
-   - `PUT /api/reviews/{reviewId}`
-   - `DELETE /api/reviews/{reviewId}`
-5. Add review service tests and review integration tests.
+### Recommended next work
+1. Update backend README and TODO docs to reflect the current implemented state.
+2. Identify any remaining assignment deliverables around documentation/architecture/testing summaries.
+3. Extract token generation into an auth service.
+4. Add admin bootstrap strategy.
+5. Add global exception handling middleware / strategy.
+6. Add structured logging setup.
 
-### Cleanup / technical debt after that
-- Extract token generation into an auth/token service.
-- Add admin bootstrap strategy.
-- Add global exception handling middleware / strategy.
-- Add structured logging setup.
+### Next major implementation phase
+1. Replace IGDB stub with real IGDB API integration.
+2. Replace AI stubs with Azure AI / Azure AI Search implementations.
+3. Add embedding pipeline / vector search wiring.
+4. Prepare Azure deployment configuration for the API.
