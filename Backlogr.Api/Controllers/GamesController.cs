@@ -24,6 +24,15 @@ public sealed class GamesController : ControllerBase
         return Ok(games);
     }
 
+    [HttpGet("search")]
+    public async Task<ActionResult<IReadOnlyList<GameBrowseResultDto>>> SearchBrowseGames(
+        [FromQuery] string? query,
+        [FromQuery] int take = 25)
+    {
+        var games = await _gameService.SearchBrowseGamesAsync(query, take);
+        return Ok(games);
+    }
+
     [HttpGet("{gameId:guid}")]
     public async Task<ActionResult<GameDetailResponseDto>> GetGameById(Guid gameId)
     {

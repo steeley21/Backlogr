@@ -1,4 +1,5 @@
-﻿using Backlogr.Api.Common;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Backlogr.Api.DTOs.Igdb;
 using Backlogr.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -33,7 +34,7 @@ public sealed class IgdbController : ControllerBase
     }
 
     [HttpPost("import/{igdbId:long}")]
-    [Authorize(Roles = RoleNames.Admin)]
+    [Authorize]
     public async Task<ActionResult<ImportedGameResponseDto>> ImportGame(long igdbId)
     {
         try
