@@ -2,32 +2,28 @@
 
 Last updated: 2026-03-13
 
-This checklist reflects the **current integrated frontend state** and what is still left before/during deployment and final polish.
+This checklist reflects the current integrated frontend state after deployment and what is still left for polish and feature completion.
 
-> **Document location:** this file now lives in the repo root `docs/` folder.
+> **Document location:** this file lives in the repo root `docs/` folder.
 
 Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal.md`.
 
 ---
 
-## 0) Current local app status
+## 0) Current frontend status
 
-### Core MVP flow now working locally
-- [x] Auth pages (`/login`, `/register`)
-- [x] Global auth gating for the core app
-- [x] Shared Axios API client with bearer token support
-- [x] Pinia auth store with token persistence
-- [x] Feed page wired to live backend data
-- [x] Browse page wired to local catalog search
-- [x] Game detail page wired to live backend data
-- [x] Library page wired to live backend data
-- [x] Log page wired to save library entries
-- [x] Optional review creation from the log page
-- [x] Profile page wired to authenticated user data
-- [x] AI Picks page wired to recommendation stub
-- [x] Review assistant wired into the log page
-- [x] Local fallback cover asset added for deployment safety
-- [x] Production build currently succeeds locally (`npm run build`)
+### Core app state
+- [x] Frontend works locally against the API
+- [x] Frontend is deployed and working in Azure Static Web Apps
+- [x] Frontend GitHub Actions CI/CD is configured
+- [x] Production build succeeds locally (`npm run build`)
+
+### Confirmed deployed behavior
+- [x] Register works in deployed environment
+- [x] Login works in deployed environment
+- [x] Library flow works in deployed environment
+- [x] Feed flow loads in deployed environment
+- [x] Frontend can reach deployed API successfully
 
 ### Current known limitations
 - [ ] Public profile pages are not built yet
@@ -37,7 +33,6 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] IGDB search/import UI is not built yet
 - [ ] Semantic search UI is not built yet
 - [ ] Frontend tests are not written yet
-- [ ] Deployment environment/config still needs to be set up
 
 ---
 
@@ -227,13 +222,13 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [x] Runtime API base is configurable
 - [x] Production build succeeds locally
 - [ ] Add `.env.example`
-- [ ] Set `NUXT_PUBLIC_API_BASE` in Azure Static Web Apps
-- [ ] Confirm deployed API URL is correct in production
+- [x] Set `NUXT_PUBLIC_API_BASE` in Azure Static Web Apps
+- [x] Confirm deployed API URL is correct in production
 
 ### Deployment validation
-- [ ] Confirm CORS works with deployed frontend domain
-- [ ] Test login/register against deployed API
-- [ ] Test browse/game detail/library/feed against deployed API
+- [x] Confirm CORS works with deployed frontend domain
+- [x] Test login/register against deployed API
+- [x] Test browse/game detail/library/feed against deployed API at the current MVP level
 - [ ] Test AI recommendation + review assistant stubs against deployed API
 - [ ] Verify direct route loads in production (`/game/:id`, `/profile`, `/recommend`, etc.)
 
@@ -247,24 +242,23 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 ## 9) Suggested next order of work
 
 ### Immediate
-1. Deploy `Backlogr.Api` first
-2. Configure frontend `NUXT_PUBLIC_API_BASE` for the deployed API
-3. Deploy `Backlogr.Web` to Azure Static Web Apps
-4. Validate auth + feed + library + AI flows in production
+1. Add `.env.example`.
+2. Write frontend service/store tests.
+3. Build public profile + follow UI.
+4. Build review edit/delete UI.
+5. Add IGDB search/import UI.
+6. Add semantic search UI.
+7. Add feed like/comment UI.
 
-### After deployment is stable
-1. Add `.env.example`
-2. Write frontend service/store tests
-3. Build public profile + follow UI
-4. Build review edit/delete UI
-5. Add IGDB search/import UI
-6. Add semantic search UI
-7. Add feed like/comment UI
+### After that
+1. Add direct-route production verification.
+2. Do a final accessibility/mobile polish pass.
+3. Tighten shared error handling and feedback patterns.
 
 ---
 
 ## 10) Notes
 
-- The frontend is no longer in the “placeholder-only” stage for the main MVP path.
-- The biggest remaining work is now deployment/config, social UI completion, IGDB/admin flows, and tests.
+- The frontend is no longer in the placeholder-only stage.
+- Deployment is working, but deployment success does not change incomplete feature status.
 - Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.

@@ -2,21 +2,24 @@
 
 ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app inspired by Letterboxd.
 
-> **Document location:** this file now lives in the repo root `docs/` folder.
+> **Document location:** this file lives in the repo root `docs/` folder.
 
 ## Current Status
 
-The backend MVP surface is working locally and is now powering the main local frontend flows in `Backlogr.Web`.
+The backend is now **deployed and working in Azure** and is serving the current `Backlogr.Web` frontend.
+
+**Production API URL:** `https://backlograpi.azurewebsites.net`
 
 Implemented so far:
 - ASP.NET Core Web API on **.NET 10**
-- Entity Framework Core + LocalDB for local development
+- Entity Framework Core + SQL Server for local and deployed environments
 - ASP.NET Core Identity with **Guid** keys
 - JWT authentication
 - Role seeding for `User` and `Admin`
 - Swagger/OpenAPI with bearer auth support
-- CORS configured for local frontend development
-- Local game catalog endpoints:
+- CORS configured for local frontend development and deployed frontend access
+- GitHub Actions CI/CD for API deployment
+- Game catalog endpoints:
   - `GET /api/games`
   - `GET /api/games/{gameId}`
 - IGDB stub endpoints:
@@ -48,8 +51,10 @@ Implemented so far:
   - `GET /api/ai/semantic-search`
 - Automated tests covering services, protected routes, and authenticated endpoint flows across implemented slices
 
-### Important current behavior
-- Feed now includes the **current user’s own activity** in addition to activity from followed users.
+### Current deployed behavior
+- Swagger is available for the deployed API.
+- Register, login, library, and feed flows are working in the deployed environment at the same level they were working in development.
+- Feed includes the **current user’s own activity** in addition to activity from followed users.
 - `GameLog.Rating` remains the source of truth for ratings.
 - IGDB and AI surfaces are still stub-backed for now.
 
@@ -58,8 +63,7 @@ Not implemented yet:
 - Real Azure AI / Azure AI Search integration
 - Admin bootstrap flow
 - Global exception handling middleware
-- Structured logging / production diagnostics
-- Azure deployment wiring / production environment configuration
+- Structured logging / production diagnostics hardening
 
 ---
 
@@ -68,7 +72,7 @@ Not implemented yet:
 - **.NET 10**
 - **ASP.NET Core Web API**
 - **Entity Framework Core 10**
-- **SQL Server LocalDB** for local development
+- **SQL Server**
 - **ASP.NET Core Identity**
 - **JWT Bearer auth**
 - **Swashbuckle / Swagger**
@@ -396,7 +400,7 @@ dotnet test
 
 - Keep JWT keys, IGDB secrets, and connection strings out of tracked config files.
 - Use **User Secrets** for local development.
-- Production secrets should move to Azure configuration / Key Vault.
+- Production secrets belong in Azure configuration.
 - Avatar handling is URL-only for now.
 - No file upload/storage is implemented yet.
 - Test authentication uses a header-driven fake auth handler only in the test host.
@@ -405,27 +409,26 @@ dotnet test
 
 ## Deployment Notes
 
-Before deploying the frontend/backend pair to Azure:
-- move production connection strings and JWT settings into Azure configuration
-- update CORS to allow the deployed Static Web App origin, not just localhost
-- point the frontend `NUXT_PUBLIC_API_BASE` to the deployed API URL
-- validate auth, library, feed, AI stub, and game detail flows against deployed domains
+Current deployment status:
+- API is deployed and working in Azure App Service.
+- Swagger is working in the deployed environment.
+- GitHub Actions CI/CD is configured for the API.
+- Frontend-to-API integration is working against the deployed API.
+
+Deployment notes:
+- Keep production connection strings and JWT settings in Azure configuration.
+- Keep CORS aligned with both localhost and the deployed frontend origin.
+- Point the frontend `NUXT_PUBLIC_API_BASE` to the deployed API URL.
+- Re-run smoke tests after any deployment/config changes.
 
 ---
 
 ## Current Gaps / Next Steps
 
 Recommended next backend work:
-1. Extract token generation into an auth/token service
-2. Add an admin bootstrap strategy
-3. Add global exception handling middleware / strategy
-4. Add structured logging setup
-5. Replace IGDB stub with real IGDB integration
-6. Replace AI stubs with Azure AI / Azure AI Search implementations
-7. Finalize Azure deployment configuration and production-ready config handling
-
-Technical cleanup still worth doing:
-- add pagination/cursor support for feed and games
-- add richer game page/community queries
-- add admin moderation endpoints
-- add consistent problem-details/error response strategy
+1. Extract token generation into an auth/token service.
+2. Add an admin bootstrap strategy.
+3. Add global exception handling middleware.
+4. Add structured logging/diagnostics hardening.
+5. Replace IGDB stubs with real IGDB integration.
+6. Replace AI stubs with Azure AI / Azure AI Search implementations.

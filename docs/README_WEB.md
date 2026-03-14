@@ -2,9 +2,11 @@
 
 Nuxt 3 + Vuetify 3 + TypeScript frontend for **Backlogr** — a Letterboxd-style social web app for video games.
 
-This frontend is now **wired to the local Backlogr API for the core MVP loop** instead of being only a UI shell. The current local app supports authenticated browsing, viewing game details, logging games into a personal library, creating reviews, viewing a personalized feed, checking a profile, and using the current AI stub features.
+This frontend is now **deployed and working in Azure Static Web Apps** and is wired to the deployed `Backlogr.Api` for the current MVP loop.
 
-> **Document location:** this file now lives in the repo root `docs/` folder.
+> **Document location:** this file lives in the repo root `docs/` folder.
+
+**Production web URL:** `https://victorious-grass-0bb8bf10f.2.azurestaticapps.net/`
 
 ---
 
@@ -24,9 +26,9 @@ This frontend is now **wired to the local Backlogr API for the core MVP loop** i
 
 ## Current Status
 
-The frontend is working locally against the current `Backlogr.Api` MVP surface.
+The frontend works locally and is now deployed against the current `Backlogr.Api` MVP surface.
 
-### Implemented locally
+### Implemented now
 - Authentication flow with:
   - `POST /api/auth/login`
   - `POST /api/auth/register`
@@ -38,250 +40,167 @@ The frontend is working locally against the current `Backlogr.Api` MVP surface.
 - Pinia auth store with token persistence + user rehydration
 - Live feed page wired to `GET /api/feed`
 - Live browse page wired to `GET /api/games`
-- Live game details page wired to `GET /api/games/{gameId}`
+- Live game detail page wired to `GET /api/games/{gameId}`
 - Live library page wired to `GET /api/library/me`
-- Live log flow wired to `POST /api/library`
-- Review creation from the log page wired to `POST /api/reviews`
-- Profile page wired to the authenticated user state / `/api/auth/me`
+- Log page wired to `POST /api/library`
+- Optional review creation from the log page via `POST /api/reviews`
+- Live authenticated profile page using `GET /api/auth/me`
 - AI Picks page wired to `POST /api/ai/recommendations`
-- Review assistant actions on the log page wired to `POST /api/ai/review-assistant`
-- Local fallback cover asset for posters and recommendations
-- Top bar log button improved so it routes through a real game-first flow
+- Review assistant wired to `POST /api/ai/review-assistant`
+- Local fallback cover asset added for deployment safety
+- Production build succeeds
+- GitHub Actions CI/CD is configured for frontend deployment
 
-### Still not implemented in the frontend
-- Public profile pages / follow UI
-- Review edit/delete UI
-- Feed like/comment UI wiring
-- IGDB search/import UI
-- Semantic search UI
-- Frontend tests
-- Azure Static Web Apps deployment/config wiring
+### Confirmed deployed behavior
+- Deployed frontend loads successfully.
+- Register, login, library, and feed are working in production at the same level they were working in development.
+- Frontend is successfully calling the deployed API.
 
----
-
-## UI Mockups (Source of Truth)
-
-Design artifacts live in the repo:
-
-- `docs/ui/`
-  - `flow/` (app flow diagrams)
-  - `screens/` (PNG mockups)
-  - `README_figma.md` (notes)
+### Current known limitations
+- Public profile pages are not built yet
+- Follow/unfollow UI is not built yet
+- Review edit/delete UI is not built yet
+- Feed like/comment UI is not built yet
+- IGDB search/import UI is not built yet
+- Semantic search UI is not built yet
+- Frontend tests are not written yet
+- Several backend-connected features are intentionally still limited to the current MVP/stub level
 
 ---
 
-## What’s Implemented
+## Routing / App Areas
 
-### App shell
-- Global layout: `layouts/default.vue`
-- Top navigation: `components/app/AppTopBar.vue`
-- Tokens + base styling:
-  - `assets/styles/tokens.css`
-  - `assets/styles/base.css`
-- Local fallback poster asset:
-  - `public/images/fallback-game-cover.svg`
+### Public routes
+- `/login`
+- `/register`
 
-### Auth + app state
-- `stores/auth.ts`
-- `middleware/auth.global.ts`
-- `services/api.ts`
-- `services/authService.ts`
-- Pages:
-  - `/login`
-  - `/register`
-
-### Pages (routes)
-- **Feed:** `/` → live feed data
-- **Browse:** `/browse` → live local catalog search
-- **Library:** `/library` → live user library
-- **AI Picks:** `/recommend` → live AI stub recommendations
-- **Log a Game:** `/log` → live log + optional review creation
-- **Profile:** `/profile` → live authenticated user info
-- **Game Detail:** `/game/:id` → live game details
-
-### Reusable components
-- Feed cards:
-  - `components/feed/FeedReviewCard.vue`
-  - `components/feed/FeedLogCard.vue`
-  - `components/feed/AiCalloutCard.vue`
-- Game UI:
-  - `components/game/GamePosterCard.vue`
-- Layout helpers:
-  - `components/layout/SectionHeader.vue`
-- Shared:
-  - `components/shared/BacklogrLogo.vue`
-  - `components/shared/StarRating.vue`
-
-> **Convention:** Use explicit imports in pages/components. Do not rely on Nuxt auto-imports for project code because the current environment has been inconsistent with them.
+### Authenticated routes in current MVP
+- `/`
+- `/browse`
+- `/game/[id]`
+- `/library`
+- `/log/[gameId]`
+- `/profile`
+- `/recommend`
 
 ---
 
-## Runtime Config / Environment
+## Current Integration Notes
 
-The frontend reads the API base URL from runtime config:
+### Auth
+- Login/register are live against the API.
+- Auth state persists through the Pinia store + token storage.
+- Authenticated user rehydration runs through `/api/auth/me`.
 
-- `runtimeConfig.public.apiBase`
+### Feed
+- Feed is live against the backend.
+- Backend now includes the current user’s own activity along with followed-user activity.
 
-Current config in `nuxt.config.ts`:
+### Library / logging
+- Library is loaded from live backend data.
+- Logging a game creates/updates the library entry.
+- Review creation is optional from the log workflow.
+- Ratings continue to come from the library/log model rather than a separate review rating field.
 
-```ts
-runtimeConfig: {
-  public: {
-    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:5042'
-  }
-}
-```
-
-### Recommended local `.env`
-
-```env
-NUXT_PUBLIC_API_BASE=http://localhost:5042
-```
-
-For Azure deployment, this value should be set in the Static Web App environment configuration and must point to the deployed API URL.
-
----
-
-## Vuetify Theme Setup
-
-Vuetify is configured via **vuetify-nuxt-module** in `nuxt.config.ts`.
-
-Current default theme:
-- dark theme
-- primary color = Backlogr purple
-- background/surface aligned to the current mockup styling
-
-If theme colors change, update both:
-- `assets/styles/tokens.css`
-- `nuxt.config.ts` Vuetify theme colors
+### AI surfaces
+- Recommendation and review-assistant pages are wired.
+- These still rely on the current backend stub behavior rather than real AI integration.
 
 ---
 
 ## Local Development
 
-### Prereqs
-- **Node.js** (recommended: current LTS)
-- **npm**
-- local `Backlogr.Api` running
+### Prerequisites
+- Node.js 20+
+- npm
+- Running `Backlogr.Api` instance
 
-### Install
+### Install dependencies
+From `Backlogr.Web`:
+
 ```powershell
-cd Backlogr.Web
 npm install
 ```
 
-### Run dev server
+### Run in development
+
 ```powershell
 npm run dev
 ```
 
-Nuxt runs at:
-- http://localhost:3000
+### Build for production
 
-### Required local backend
-The frontend expects the API to be available at the configured `NUXT_PUBLIC_API_BASE` and currently assumes the authenticated backend surface is available.
-
----
-
-## Build & Preview
-
-### Production build
 ```powershell
 npm run build
 ```
 
-### Preview production build locally
-```powershell
-npm run preview
+### Runtime config
+The frontend reads its API base URL from runtime config.
+
+Expected environment variable:
+
+```text
+NUXT_PUBLIC_API_BASE=https://backlograpi.azurewebsites.net
 ```
 
-The production build is currently succeeding locally.
+Keep this configurable per environment.
 
 ---
 
-## Linting / Tests
-
-### Lint
-```powershell
-npm run lint
-```
-
-### Tests
-```powershell
-npm test
-```
-
-Vitest is installed, but core frontend tests still need to be written for the current service/store/UI flows.
-
----
-
-## Project Structure (high level)
+## Current Frontend Structure
 
 ```text
 Backlogr.Web/
-├── assets/styles/           # tokens + base styles
-├── components/
-│   ├── app/                 # app shell (top bar)
-│   ├── feed/                # feed cards + callouts
-│   ├── game/                # game poster cards, etc.
-│   ├── layout/              # section headers, layout helpers
-│   └── shared/              # shared UI pieces (logo, stars)
-├── layouts/                 # Nuxt layouts
-├── middleware/              # auth route protection
-├── pages/                   # route-based pages
-├── plugins/                 # Vuetify plugin
-├── public/images/           # local static assets
-├── services/                # API service layer
-├── stores/                  # Pinia stores
-├── types/                   # shared TypeScript types
-└── nuxt.config.ts
+├── app/
+│   ├── components/
+│   ├── layouts/
+│   ├── middleware/
+│   ├── pages/
+│   ├── plugins/
+│   ├── services/
+│   ├── stores/
+│   ├── types/
+│   └── utils/
+├── public/
+├── nuxt.config.ts
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
-## Current MVP Flow
+## Deployment Notes
 
-A working local path through the app now looks like this:
+Current deployment status:
+- Frontend is deployed and working in Azure Static Web Apps.
+- `NUXT_PUBLIC_API_BASE` is configured to use the deployed API.
+- API CORS is configured to allow the deployed frontend origin.
+- GitHub Actions CI/CD is configured for the frontend.
 
-1. Register or log in
-2. Browse local catalog games
-3. Open a game detail page
-4. Log the game into the user library
-5. Optionally create a review from the log page
-6. See resulting activity in:
-   - library
-   - feed
-   - profile
-7. Use current AI stubs for:
-   - recommendations
-   - review drafting / rewriting
+Post-deployment validation completed:
+- frontend loads successfully in production
+- API integration works from the deployed frontend
+- core auth/library/feed flows load as expected in production
 
 ---
 
-## Known Limitations / Next Steps
+## Remaining Frontend Work
 
-### Frontend work still needed
-- Follow/unfollow UI
-- Public user profiles
-- Feed like/comment UI
-- Dedicated review editing/deleting flow
-- Semantic search UI
-- IGDB search/import UI
-- Toast/snackbar pattern for success/error feedback
-- More polished validation and accessibility passes
-- Vitest coverage for services, stores, and critical flows
-
-### Deployment readiness work
-- Add `.env.example`
-- Configure Azure Static Web Apps environment values
-- Point `NUXT_PUBLIC_API_BASE` to deployed API
-- Validate CORS against deployed domains
-- Finalize README / docs deployment instructions
+Recommended next frontend work:
+1. Add `.env.example`.
+2. Write frontend service/store/component tests.
+3. Build public profile pages.
+4. Build follow/unfollow UI.
+5. Build review edit/delete UI.
+6. Add feed like/comment UI.
+7. Add IGDB search/import UI.
+8. Add semantic search UI.
+9. Do a final accessibility/mobile polish pass.
 
 ---
 
 ## Notes
 
-- The app is intentionally auth-gated right now to reduce complexity during deployment setup.
-- The current AI and IGDB integrations are still stub-backed on the API side.
-- The frontend is now beyond the placeholder/mock-data phase for the main MVP path, but several social/admin/search features are still pending.
+- Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
+- Do not overstate incomplete features just because deployment is now live.
+- The main remaining work is feature completion, test coverage, and replacing current stubs with real integrations.
