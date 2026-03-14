@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { navigateTo, useRoute } from '#imports'
 import BacklogrLogo from '~/components/shared/BacklogrLogo.vue'
 import { useAuthStore } from '~/stores/auth'
+import { isAdminLike } from '~/utils/roles'
 
 type NavItem = {
   label: string
@@ -11,19 +12,39 @@ type NavItem = {
   icon?: string
 }
 
-const navItems: NavItem[] = [
-  { label: 'Feed', to: '/' },
-  { label: 'Browse', to: '/browse' },
-  { label: 'Library', to: '/library' },
-  { label: 'AI Picks', to: '/recommend', icon: 'mdi-sparkles' },
-]
-
 const route = useRoute()
 const authStore = useAuthStore()
 const search = ref('')
 
 const isAuthPage = computed(() => {
   return route.path === '/login' || route.path === '/register'
+})
+
+const isLandingPage = computed(() => {
+  return route.path === '/'
+})
+
+const isAdminUser = computed(() => {
+  return isAdminLike(authStore.roles)
+})
+
+const navItems = computed<NavItem[]>(() => {
+  const items: NavItem[] = [
+    { label: 'Feed', to: '/feed' },
+    { label: 'Browse', to: '/browse' },
+    { label: 'Library', to: '/library' },
+    { label: 'AI Picks', to: '/recommend', icon: 'mdi-sparkles' },
+  ]
+
+  if (isAdminUser.value) {
+    items.push({ label: 'Admin', to: '/admin', icon: 'mdi-shield-account' })
+  }
+
+  return items
+})
+
+const showAuthenticatedChrome = computed(() => {
+  return authStore.isAuthenticated && !isAuthPage.value && !isLandingPage.value
 })
 
 const currentGameId = computed(() => {
@@ -103,12 +124,12 @@ async function handleLogout(): Promise<void> {
 
 <template>
   <v-app-bar height="76" flat class="appbar">
-    <div class="bar-inner" :class="{ 'auth-mode': isAuthPage }">
+    <div class="bar-inner" :class="{ 'public-mode': !showAuthenticatedChrome }">
       <div class="left">
         <BacklogrLogo />
       </div>
 
-      <template v-if="!isAuthPage">
+      <template v-if="showAuthenticatedChrome">
         <div class="center nav">
           <v-btn
             v-for="item in navItems"
@@ -192,6 +213,12 @@ async function handleLogout(): Promise<void> {
                   title="Library"
                 />
                 <v-list-item
+                  v-if="isAdminUser"
+                  to="/admin"
+                  prepend-icon="mdi-shield-account"
+                  title="Admin"
+                />
+                <v-list-item
                   prepend-icon="mdi-logout"
                   title="Sign out"
                   @click="handleLogout"
@@ -203,8 +230,19 @@ async function handleLogout(): Promise<void> {
       </template>
 
       <template v-else>
-        <div class="right auth-actions d-flex align-center justify-end">
+        <div class="right public-actions d-flex align-center justify-end">
           <v-btn
+            v-if="authStore.isAuthenticated && isLandingPage"
+            to="/feed"
+            variant="text"
+            rounded="pill"
+            class="text-none"
+          >
+            Open feed
+          </v-btn>
+
+          <v-btn
+            v-else
             to="/login"
             variant="text"
             rounded="pill"
@@ -215,6 +253,17 @@ async function handleLogout(): Promise<void> {
           </v-btn>
 
           <v-btn
+            v-if="authStore.isAuthenticated && isLandingPage"
+            to="/browse"
+            color="primary"
+            rounded="pill"
+            class="text-none px-5"
+          >
+            Browse games
+          </v-btn>
+
+          <v-btn
+            v-else
             to="/register"
             color="primary"
             rounded="pill"
@@ -244,7 +293,7 @@ async function handleLogout(): Promise<void> {
   gap: 16px;
 }
 
-.bar-inner.auth-mode {
+.bar-inner.public-mode {
   grid-template-columns: 220px 1fr;
 }
 
@@ -318,11 +367,11 @@ async function handleLogout(): Promise<void> {
   color: var(--muted-foreground);
 }
 
-.auth-actions {
+.public-actions {
   gap: 10px;
 }
 
-.auth-actions .active {
+.public-actions .active {
   background: rgba(255, 255, 255, 0.10);
   color: var(--foreground);
 }
@@ -335,7 +384,7 @@ async function handleLogout(): Promise<void> {
       "center center";
   }
 
-  .bar-inner.auth-mode {
+  .bar-inner.public-mode {
     grid-template-columns: 1fr auto;
     grid-template-areas: "left right";
   }
@@ -363,7 +412,7 @@ async function handleLogout(): Promise<void> {
 }
 
 @media (max-width: 700px) {
-  .bar-inner:not(.auth-mode) {
+  .bar-inner:not(.public-mode) {
     grid-template-columns: 1fr;
     grid-template-areas:
       "left"

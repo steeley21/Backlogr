@@ -1,249 +1,189 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { AxiosError } from 'axios'
-import FeedReviewCard from '~/components/feed/FeedReviewCard.vue'
-import FeedLogCard from '~/components/feed/FeedLogCard.vue'
-import AiCalloutCard from '~/components/feed/AiCalloutCard.vue'
-import { getFeed } from '~/services/feedService'
+import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import type { FeedItem } from '~/types/feed'
-
-type FeedFilter = 'all' | 'reviews' | 'logs'
 
 const authStore = useAuthStore()
 
-const filter = ref<FeedFilter>('all')
-const feedItems = ref<FeedItem[]>([])
-const isLoading = ref(false)
-const errorMessage = ref('')
-
-const displayName = computed(() => {
-  return authStore.displayName || authStore.userName || 'there'
+const primaryCtaTo = computed(() => {
+  return authStore.isAuthenticated ? '/feed' : '/register'
 })
 
-const visibleItems = computed(() => {
-  if (filter.value === 'reviews') {
-    return feedItems.value.filter(item => item.type === 'review')
-  }
-
-  if (filter.value === 'logs') {
-    return feedItems.value.filter(item => item.type === 'log')
-  }
-
-  return feedItems.value
+const primaryCtaLabel = computed(() => {
+  return authStore.isAuthenticated ? 'Open your feed' : 'Create account'
 })
 
-const logCount = computed(() => {
-  return feedItems.value.filter(item => item.type === 'log').length
+const secondaryCtaTo = computed(() => {
+  return authStore.isAuthenticated ? '/browse' : '/login'
 })
 
-const reviewCount = computed(() => {
-  return feedItems.value.filter(item => item.type === 'review').length
+const secondaryCtaLabel = computed(() => {
+  return authStore.isAuthenticated ? 'Browse games' : 'Sign in'
 })
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const apiMessage = error.response?.data
+const featureCards = [
+  {
+    icon: 'mdi-controller-classic-outline',
+    title: 'Track your library',
+    copy: 'Log what you are playing, what you have finished, and what still belongs in your backlog.',
+  },
+  {
+    icon: 'mdi-star-outline',
+    title: 'Write quick reviews',
+    copy: 'Capture your thoughts, spoiler-tag them when needed, and keep a history of how you felt about each game.',
+  },
+  {
+    icon: 'mdi-account-group-outline',
+    title: 'Follow activity',
+    copy: 'See your own recent logs and reviews first, then build out a social feed as you connect with other players.',
+  },
+  {
+    icon: 'mdi-sparkles',
+    title: 'Get AI picks',
+    copy: 'Use your logged games and ratings to generate recommendation ideas for what to play next.',
+  },
+] as const
 
-    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
-      return apiMessage
-    }
-
-    if (Array.isArray(apiMessage) && apiMessage.length > 0) {
-      return apiMessage.join(', ')
-    }
-  }
-
-  return 'Unable to load your feed right now. Please try again.'
-}
-
-async function loadFeed(): Promise<void> {
-  isLoading.value = true
-  errorMessage.value = ''
-
-  try {
-    feedItems.value = await getFeed(25)
-  }
-  catch (error: unknown) {
-    feedItems.value = []
-    errorMessage.value = getErrorMessage(error)
-  }
-  finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(async () => {
-  await loadFeed()
-})
+const steps = [
+  'Create an account and build your player profile.',
+  'Browse the catalog and log games into your library.',
+  'Write reviews, rate your experience, and keep your history in one place.',
+  'Use recommendations when you need help choosing the next game.',
+] as const
 </script>
 
 <template>
-  <div class="page">
+  <div class="landing-page">
     <v-card class="hero" rounded="xl" flat>
-      <div class="hero-overlay" />
+      <div class="hero-glow" />
 
-      <div class="hero-inner">
-        <div class="overline">YOUR ACTIVITY</div>
-        <div class="hero-title">Welcome back, {{ displayName }}</div>
-        <div class="hero-sub muted">
-          Your feed includes your own latest logs and reviews, plus activity from people you follow.
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="overline">WELCOME TO BACKLOGR</div>
+          <h1 class="hero-title">A social backlog for the games you actually play.</h1>
+          <p class="hero-subtitle">
+            Backlogr gives you one place to log games, write reviews, follow activity, and get AI-powered suggestions for what to pick up next.
+          </p>
+
+          <div class="hero-actions">
+            <v-btn color="primary" rounded="pill" class="text-none px-6" :to="primaryCtaTo">
+              {{ primaryCtaLabel }}
+            </v-btn>
+
+            <v-btn variant="text" rounded="pill" class="text-none" :to="secondaryCtaTo">
+              {{ secondaryCtaLabel }}
+            </v-btn>
+          </div>
         </div>
 
-        <div class="hero-actions">
-          <v-btn color="primary" rounded="pill" class="text-none px-6" to="/browse">
-            Browse Games
-          </v-btn>
+        <div class="hero-panel">
+          <div class="panel-kicker">What Backlogr helps you do</div>
 
-          <v-btn variant="text" rounded="pill" class="text-none" to="/library">
-            View Library
-          </v-btn>
+          <div class="panel-stats">
+            <div class="stat-card">
+              <div class="stat-value">Library</div>
+              <div class="stat-label">Track statuses, ratings, and notes</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-value">Reviews</div>
+              <div class="stat-label">Capture reactions while they are fresh</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-value">Feed</div>
+              <div class="stat-label">Keep up with your own activity and others</div>
+            </div>
+          </div>
         </div>
       </div>
     </v-card>
 
-    <v-row align="start" class="content" dense>
-      <v-col cols="12" md="8" class="feed-col">
-        <div class="section-head">
-          <div class="title">
-            <v-icon icon="mdi-account-group" color="primary" size="20" />
-            <span>Your Feed</span>
-          </div>
+    <v-row class="section-row" dense>
+      <v-col cols="12" lg="8">
+        <v-card class="section-card" rounded="xl" flat>
+          <div class="section-overline">CORE FEATURES</div>
+          <h2 class="section-title">Built for tracking, reviewing, and discovering games.</h2>
 
-          <div class="section-actions">
-            <v-btn
-              variant="text"
-              rounded="pill"
-              class="text-none"
-              prepend-icon="mdi-refresh"
-              :loading="isLoading"
-              @click="loadFeed"
+          <v-row class="mt-2" dense>
+            <v-col
+              v-for="feature in featureCards"
+              :key="feature.title"
+              cols="12"
+              sm="6"
             >
-              Refresh
-            </v-btn>
-
-            <v-btn-toggle v-model="filter" mandatory density="comfortable" rounded="pill" class="filter">
-              <v-btn value="all" class="text-none">All</v-btn>
-              <v-btn value="reviews" class="text-none">Reviews</v-btn>
-              <v-btn value="logs" class="text-none">Logs</v-btn>
-            </v-btn-toggle>
-          </div>
-        </div>
-
-        <v-alert
-          v-if="errorMessage"
-          type="error"
-          variant="tonal"
-          rounded="lg"
-          class="mb-4"
-        >
-          {{ errorMessage }}
-        </v-alert>
-
-        <div v-if="isLoading" class="d-flex flex-column ga-4">
-          <v-skeleton-loader
-            v-for="n in 3"
-            :key="n"
-            type="article"
-            class="feed-skeleton"
-          />
-        </div>
-
-        <v-card
-          v-else-if="visibleItems.length === 0"
-          class="empty-state"
-          rounded="xl"
-          flat
-        >
-          <div class="text-h6 font-weight-bold mb-2">Your feed is quiet right now</div>
-          <div class="muted mb-4">
-            Log a game or write a review to see your own activity here. When you follow other members, their activity will appear too.
-          </div>
-
-          <div class="d-flex ga-3 flex-wrap">
-            <v-btn color="primary" rounded="pill" class="text-none px-6" to="/browse">
-              Find a game
-            </v-btn>
-
-            <v-btn variant="text" rounded="pill" class="text-none" to="/library">
-              Open library
-            </v-btn>
-          </div>
+              <div class="feature-card">
+                <div class="feature-icon-wrap">
+                  <v-icon :icon="feature.icon" size="22" color="primary" />
+                </div>
+                <div class="feature-title">{{ feature.title }}</div>
+                <div class="muted feature-copy">{{ feature.copy }}</div>
+              </div>
+            </v-col>
+          </v-row>
         </v-card>
-
-        <div v-else class="d-flex flex-column ga-4">
-          <template v-for="item in visibleItems" :key="item.id">
-            <FeedReviewCard v-if="item.type === 'review'" :item="item" />
-            <FeedLogCard v-else :item="item" />
-          </template>
-        </div>
       </v-col>
 
-      <v-col cols="12" md="4" class="rail-col">
-        <v-card class="stats-card rail-block" rounded="xl" flat>
-          <div class="section-head compact">
-            <div class="title">
-              <v-icon icon="mdi-chart-box-outline" color="primary" size="20" />
-              <span>Feed Snapshot</span>
+      <v-col cols="12" lg="4">
+        <v-card class="section-card" rounded="xl" flat>
+          <div class="section-overline">HOW IT FLOWS</div>
+          <h2 class="section-title">Start simple and build from there.</h2>
+
+          <div class="steps-list mt-5">
+            <div v-for="(step, index) in steps" :key="step" class="step-item">
+              <div class="step-badge">{{ index + 1 }}</div>
+              <div class="step-copy">{{ step }}</div>
             </div>
-          </div>
-
-          <div class="stats-grid">
-            <div class="stat">
-              <div class="num">{{ feedItems.length }}</div>
-              <div class="label">Items</div>
-            </div>
-
-            <div class="stat">
-              <div class="num">{{ reviewCount }}</div>
-              <div class="label">Reviews</div>
-            </div>
-
-            <div class="stat">
-              <div class="num">{{ logCount }}</div>
-              <div class="label">Logs</div>
-            </div>
-          </div>
-        </v-card>
-
-        <AiCalloutCard class="rail-block" />
-
-        <v-card class="info-card rail-block" rounded="xl" flat>
-          <div class="section-head compact">
-            <div class="title">
-              <v-icon icon="mdi-information-outline" color="primary" size="20" />
-              <span>How the feed works</span>
-            </div>
-          </div>
-
-          <div class="muted info-copy">
-            You’ll see your own recent activity here first. As you follow other members, their logs and reviews will be mixed into the same timeline.
           </div>
         </v-card>
       </v-col>
     </v-row>
+
+    <v-card class="closing-card" rounded="xl" flat>
+      <div class="section-overline">READY TO START?</div>
+      <div class="closing-grid">
+        <div>
+          <h2 class="section-title mb-2">Stop losing track of what you played.</h2>
+          <div class="muted closing-copy">
+            Build a cleaner record of your gaming history and keep recommendations close when your backlog gets hard to choose from.
+          </div>
+        </div>
+
+        <div class="closing-actions">
+          <v-btn color="primary" rounded="pill" class="text-none px-6" :to="primaryCtaTo">
+            {{ primaryCtaLabel }}
+          </v-btn>
+
+          <v-btn variant="text" rounded="pill" class="text-none" :to="secondaryCtaTo">
+            {{ secondaryCtaLabel }}
+          </v-btn>
+        </div>
+      </div>
+    </v-card>
   </div>
 </template>
 
 <style scoped>
-.page {
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   padding-top: 6px;
 }
 
-.content {
-  margin-top: 18px;
+.hero,
+.section-card,
+.closing-card {
+  background: color-mix(in srgb, var(--card) 92%, black);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .hero {
   position: relative;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 4px) !important;
   overflow: hidden;
-  min-height: 220px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   background:
-    radial-gradient(900px 320px at 20% 10%, rgba(168, 85, 247, 0.18), transparent 55%),
-    linear-gradient(135deg, rgba(20, 24, 28, 0.96), rgba(28, 34, 40, 0.94));
+    radial-gradient(860px 320px at 18% 0%, rgba(168, 85, 247, 0.2), transparent 55%),
+    linear-gradient(135deg, rgba(20, 24, 28, 0.98), rgba(28, 34, 40, 0.96));
 }
 
 .hero::after {
@@ -255,174 +195,217 @@ onMounted(async () => {
   pointer-events: none;
 }
 
-.hero-overlay {
+.hero-glow {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(600px 220px at 80% 0%, rgba(168, 85, 247, 0.12), transparent 60%);
+    radial-gradient(520px 220px at 84% 0%, rgba(168, 85, 247, 0.14), transparent 58%);
 }
 
-.hero-inner {
+.hero-grid {
   position: relative;
-  padding: 36px 36px;
-  max-width: 640px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+  gap: 24px;
+  padding: 34px;
 }
 
-.overline {
+.hero-copy {
+  max-width: 660px;
+}
+
+.overline,
+.section-overline,
+.panel-kicker {
   color: var(--primary);
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   font-size: 0.75rem;
-  margin-bottom: 10px;
+}
+
+.hero-title,
+.section-title {
+  color: var(--foreground);
+  font-weight: 800;
+  line-height: 1.08;
 }
 
 .hero-title {
-  font-size: 2.2rem;
-  font-weight: 800;
-  line-height: 1.05;
-  margin-bottom: 10px;
-  color: var(--foreground);
+  margin-top: 10px;
+  font-size: 2.6rem;
+  max-width: 620px;
 }
 
-.hero-sub {
-  max-width: 560px;
-  line-height: 1.55;
-  margin-bottom: 18px;
-}
-
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  gap: 12px;
-}
-
-.section-head.compact {
-  margin-bottom: 12px;
-}
-
-.section-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.title {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.15rem;
-  font-weight: 750;
-}
-
-.filter {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  padding: 4px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
-}
-
-.filter :deep(.v-btn) {
-  border-radius: 9999px !important;
-  color: var(--muted-foreground);
-  background: transparent;
-  min-height: 34px;
-}
-
-.filter :deep(.v-btn--active) {
-  background: rgba(255, 255, 255, 0.10);
-  color: var(--foreground);
-}
-
-.rail-block {
-  margin-top: 14px;
-}
-
-.stats-card,
-.info-card,
-.empty-state {
-  background: var(--card);
-  border: 1px solid var(--border);
-}
-
-.stats-card,
-.info-card {
-  padding: 16px;
-}
-
-.empty-state {
-  padding: 24px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.stat {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius);
-  padding: 12px;
-  text-align: center;
-}
-
-.num {
-  font-weight: 800;
-  font-size: 1.2rem;
-}
-
-.label {
-  color: var(--muted-foreground);
-  font-size: 0.9rem;
-}
-
-.info-copy,
+.hero-subtitle,
 .muted {
   color: var(--muted-foreground);
 }
 
-.feed-skeleton {
-  background: transparent;
+.hero-subtitle {
+  margin-top: 14px;
+  max-width: 560px;
+  line-height: 1.65;
+  font-size: 1rem;
+}
+
+.hero-actions,
+.closing-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-actions {
+  margin-top: 22px;
+}
+
+.hero-panel {
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.panel-stats {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.stat-card,
+.feature-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+}
+
+.stat-card {
+  padding: 16px;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.stat-label,
+.feature-copy,
+.step-copy,
+.closing-copy {
+  line-height: 1.6;
+}
+
+.stat-label {
+  margin-top: 6px;
+  color: var(--muted-foreground);
+}
+
+.section-row {
+  margin-top: 0;
+}
+
+.section-card {
+  height: 100%;
+  padding: 24px;
+}
+
+.section-title {
+  margin-top: 10px;
+  font-size: 1.8rem;
+}
+
+.feature-card {
+  height: 100%;
+  padding: 18px;
+}
+
+.feature-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(168, 85, 247, 0.08);
+  margin-bottom: 14px;
+}
+
+.feature-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.steps-list {
+  display: grid;
+  gap: 12px;
+}
+
+.step-item {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.step-badge {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.14);
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.step-copy {
+  color: var(--muted-foreground);
+  padding-top: 8px;
+}
+
+.closing-card {
+  padding: 24px;
+}
+
+.closing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+@media (max-width: 960px) {
+  .hero-grid,
+  .closing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
 }
 
 @media (max-width: 600px) {
-  .hero-inner {
-    padding: 30px 22px;
+  .hero-grid,
+  .section-card,
+  .closing-card {
+    padding: 20px;
   }
 
   .hero-title {
     font-size: 1.9rem;
   }
-}
 
-@media (min-width: 960px) {
-  .content {
-    flex-wrap: nowrap !important;
-    column-gap: 22px;
-  }
-
-  .feed-col {
-    flex: 1 1 auto !important;
-    max-width: none !important;
-    min-width: 0;
-  }
-
-  .rail-col {
-    flex: 0 0 340px !important;
-    width: 340px !important;
-    max-width: 340px !important;
+  .hero-actions,
+  .closing-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

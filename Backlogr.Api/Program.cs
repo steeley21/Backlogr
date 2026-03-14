@@ -124,7 +124,13 @@ builder.Services.AddAuthorization();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? ["http://localhost:3000"];
+    .Get<string[]>() ??
+    [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://localhost:3000",
+        "https://localhost:3001"
+    ];
 
 builder.Services.AddCors(options =>
 {
