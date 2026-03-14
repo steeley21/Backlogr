@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-14
 
-This checklist reflects the current integrated frontend state after deployment plus the newly added landing-page and admin user-management work.
+This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -26,14 +26,12 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Frontend can reach deployed API successfully
 - [x] Browse is backed by the live merged catalog/search flow
 
-### Confirmed current local behavior
-- [x] Public landing page is implemented at `/`
-- [x] Authenticated home/feed route is split to `/feed`
-- [x] Admin route exists and is role-gated
-- [x] Admin dashboard user list works
-- [x] Admin create-user flow works
-- [x] SuperAdmin role-edit flow works
-- [x] Admin dashboard search/filter/feedback polish pass is in place
+### Recent codebase additions ready for deploy/smoke test
+- [x] Public landing page at `/`
+- [x] Authenticated feed moved to `/feed`
+- [x] Admin dashboard route and role-gated navigation
+- [x] Admin user list/create/edit/delete flows
+- [x] Profile delete-account flow
 
 ### Current known limitations
 - [ ] Public profile pages are not built yet
@@ -42,8 +40,6 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Feed like/comment UI is not built yet
 - [ ] Semantic search UI is not built yet
 - [ ] Frontend tests are not written yet
-- [ ] Admin review moderation is not built
-- [ ] Dedicated import-management UI is not built
 
 ---
 
@@ -62,7 +58,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Library types
 - [x] Review types
 - [x] AI types
-- [x] Admin types
+- [x] Admin/account-management types
 - [ ] Consider a future cleanup pass to organize DTOs into a dedicated `types/api/` or `types/dtos/` structure
 
 ### State management (Pinia)
@@ -71,13 +67,12 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] `feedStore` *(page still loads directly from service)*
 - [ ] `libraryStore`
 - [ ] `profileStore`
-- [ ] `adminStore` *(not necessary yet, but could be added later if admin UI expands)*
 
 ### Route protection
 - [x] Global auth middleware added
-- [x] Public-route exceptions for `/`, `/login`, `/register`
+- [x] Public-route allowance for `/`, `/login`, and `/register`
 - [x] Core app routes gated behind auth
-- [x] Admin route gated behind `Admin` / `SuperAdmin`
+- [x] Admin-only gate for `/admin`
 
 ---
 
@@ -88,16 +83,16 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Shared API client created
 - [x] Bearer token request interceptor
 - [x] 401 handling / redirect to login
-- [x] Shared `getApiErrorMessage()` helper extracted
+- [x] Shared `getApiErrorMessage()` helper added
 
 ### Auth service + UI
 - [x] `authService.ts`
 - [x] Login page
 - [x] Register page
 - [x] Auth store rehydration
-- [x] AppTopBar public/authenticated/admin states
+- [x] AppTopBar login/logout state
 - [x] Profile/avatar only shown when authenticated
-- [x] Auth redirect flow now lands on `/feed`
+- [x] Self-delete account flow wired to the API
 
 ---
 
@@ -105,10 +100,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 
 ### Landing / navigation
 - [x] Public landing page at `/`
-- [x] Marketing/intro content added for the site
-- [x] Route split so authenticated feed is `/feed`
-- [x] Top-bar behavior updated for public vs authenticated routes
-- [ ] Continue content/design polish on landing page if needed for final presentation
+- [x] Feed moved to `/feed`
+- [x] Public vs authenticated top-bar behavior updated
 
 ### Feed
 - [x] Replace mock feed data with live API call
@@ -160,22 +153,20 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 ### Profile
 - [x] Real authenticated profile page
 - [x] Refresh profile flow
+- [x] Delete-account section and dialog
 - [ ] Public profile route
 - [ ] Social stats / follow counts
 - [ ] Editable profile fields
 
 ### Admin
-- [x] Admin dashboard page
-- [x] Admin-only navigation visibility
-- [x] User list wiring
-- [x] Create-user dialog
-- [x] SuperAdmin-only role edit dialog
-- [x] Search/filter UI
-- [x] Success/error snackbar feedback
-- [x] Safer disabled/loading states on admin actions
-- [ ] Admin pagination if user count grows
-- [ ] Admin table sort controls
-- [ ] Admin review moderation UI
+- [x] Admin dashboard route
+- [x] User list wired to API
+- [x] Create-user dialog wired to API
+- [x] Search + role filter
+- [x] `SuperAdmin` role edit dialog
+- [x] Delete-user dialog
+- [ ] User-list pagination
+- [ ] Optional richer audit/help text if needed for final demo
 
 ---
 
@@ -213,16 +204,16 @@ Current search decisions:
 ### Remaining frontend tasks
 - [ ] Add semantic search UI for `GET /api/ai/semantic-search`
 - [ ] Add optional browse/result polish for larger catalogs
-- [ ] Decide whether any explicit import-management UI is needed for admin/demo purposes
+- [ ] Decide whether any explicit “import management” UI is needed for admin/demo purposes
 
 ---
 
 ## 6) Error handling / polish pass
 
 - [x] Basic loading/empty/error states are present on core wired pages
-- [x] Shared API error formatting helper exists
-- [x] Snackbar feedback pattern exists on admin flows
-- [ ] Expand snackbar/feedback pattern across non-admin pages
+- [x] Admin success/error snackbar feedback added
+- [x] Admin create/edit/delete actions have safer loading/disabled states
+- [ ] Add a broader shared toast/snackbar pattern across the rest of the app
 - [ ] Tighten form validation / messaging on log + auth pages
 - [ ] Accessibility pass (labels, keyboard flow, aria polish)
 - [ ] Mobile UX pass after deployment verification
@@ -244,63 +235,23 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ### Store tests
 - [ ] `authStore` token persistence + logout clears
-- [ ] role helper coverage for `Admin` / `SuperAdmin`
+- [ ] Role helper visibility behavior for admin/superadmin UI
 
 ### Component / page smoke tests
-- [ ] Auth pages
 - [ ] Landing page render
+- [ ] Auth pages
 - [ ] Feed render
 - [ ] Browse click/import flow
 - [ ] Log form validation
 - [ ] Recommend page render
-- [ ] Admin page render + role-gated actions
+- [ ] Admin dashboard permissions + dialog flows
+- [ ] Profile delete-account flow
 
 ---
 
 ## 8) Deployment readiness checklist (frontend side)
 
-### Configuration
-- [x] Runtime API base is configurable
-- [x] `.env.example` exists
-- [x] Production build succeeds locally
-- [x] Set `NUXT_PUBLIC_API_BASE` in Azure Static Web Apps
-- [x] Confirm deployed API URL is correct in production
-
-### Deployment validation
-- [x] Confirm CORS works with deployed frontend domain
-- [x] Test login/register against deployed API
-- [x] Test browse/game detail/library/feed against deployed API at the current MVP level
-- [ ] Re-test landing page + `/feed` split after next frontend deployment
-- [ ] Re-test admin dashboard after next frontend/backend deployment
-- [ ] Test AI recommendation + review assistant stubs against deployed API
-- [ ] Verify direct route loads in production (`/game/:id`, `/profile`, `/recommend`, `/admin`, etc.)
-
-### CI expectations
-- [ ] `npm ci`
-- [x] `npm run build`
-- [ ] `npm test`
-
----
-
-## 9) Suggested next order of work
-
-### Immediate
-1. Write frontend tests for auth/admin/core services.
-2. Build public profile + follow UI.
-3. Build review edit/delete UI.
-4. Add semantic search UI.
-5. Add feed like/comment UI.
-6. Expand the feedback/error-handling pattern beyond the admin page.
-
-### After that
-1. Re-verify direct-route production loads.
-2. Do a final accessibility/mobile polish pass.
-3. Decide whether any import-management or demo-only admin tooling is still worth adding.
-
----
-
-## 10) Notes
-
-- The frontend is no longer in the placeholder-only stage.
-- Deployment is working, but deployment success does not change incomplete feature status.
-- Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
+- [ ] Rebuild and deploy frontend with the latest landing/admin/account-management changes
+- [ ] Smoke test `/`, `/feed`, `/admin`, and `/profile` against production API
+- [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production
+- [ ] Verify delete-account redirect/logout flow in production

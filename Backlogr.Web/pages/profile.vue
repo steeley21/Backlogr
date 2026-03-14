@@ -1,13 +1,20 @@
 <script setup lang="ts">
+import { navigateTo } from '#app'
 import { computed, onMounted, ref } from 'vue'
 import { AxiosError } from 'axios'
 import SectionHeader from '~/components/layout/SectionHeader.vue'
+import ProfileDeleteAccountDialog from '~/components/profile/ProfileDeleteAccountDialog.vue'
+import { deleteAccount } from '~/services/authService'
 import { useAuthStore } from '~/stores/auth'
+import type { DeleteAccountRequestDto } from '~/types/auth'
 
 const authStore = useAuthStore()
 
 const isRefreshing = ref(false)
+const isDeletingAccount = ref(false)
+const isDeleteDialogOpen = ref(false)
 const errorMessage = ref('')
+const deleteAccountErrorMessage = ref('')
 
 const user = computed(() => authStore.user)
 
@@ -32,6 +39,27 @@ const avatarInitials = computed(() => {
 const profileHandle = computed(() => {
   return authStore.userName ? `@${authStore.userName}` : ''
 })
+
+const canDeleteOwnAccount = computed(() => {
+  return Boolean(user.value?.userName || authStore.userName)
+})
+
+async function handleDeleteAccount(payload: DeleteAccountRequestDto): Promise<void> {
+  isDeletingAccount.value = true
+  deleteAccountErrorMessage.value = ''
+
+  try {
+    await deleteAccount(payload)
+    authStore.logout()
+    await navigateTo('/')
+  }
+  catch (error: unknown) {
+    deleteAccountErrorMessage.value = getErrorMessage(error)
+  }
+  finally {
+    isDeletingAccount.value = false
+  }
+}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -170,6 +198,33 @@ onMounted(async () => {
         Public profile pages, follow counts, review totals, and editable profile fields can be added once those backend endpoints are in place.
       </div>
     </v-card>
+
+    <v-card class="danger-panel mt-4" rounded="xl" flat>
+      <div class="text-h6 font-weight-bold mb-2">Delete account</div>
+      <div class="muted mb-4">
+        Permanently remove your Backlogr account. This requires your password and username confirmation.
+      </div>
+
+      <v-btn
+        color="error"
+        rounded="pill"
+        class="text-none px-6"
+        prepend-icon="mdi-delete-alert-outline"
+        :disabled="!canDeleteOwnAccount || isDeletingAccount"
+        @click="isDeleteDialogOpen = true"
+      >
+        Delete account
+      </v-btn>
+    </v-card>
+
+    <ProfileDeleteAccountDialog
+      v-model="isDeleteDialogOpen"
+      :user-name="user?.userName || authStore.userName || ''"
+      :display-name="user?.displayName || authStore.displayName || ''"
+      :is-submitting="isDeletingAccount"
+      :error-message="deleteAccountErrorMessage"
+      @submit="handleDeleteAccount"
+    />
   </div>
 </template>
 
@@ -177,6 +232,12 @@ onMounted(async () => {
 .panel {
   background: var(--card);
   border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.danger-panel {
+  background: color-mix(in srgb, var(--card) 88%, black);
+  border: 1px solid rgba(244, 67, 54, 0.25);
   padding: 20px;
 }
 

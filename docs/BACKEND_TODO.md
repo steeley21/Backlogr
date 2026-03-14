@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-14
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, the new admin user-management work verified locally, and the updated passing backend test suite.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin user-management, and self-service account deletion.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -14,7 +14,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 
 ### Core backend state
 - [x] Backend MVP surface is implemented
-- [x] Automated backend tests pass across implemented slices
+- [x] Automated backend tests pass across the current covered slices
 - [x] API is deployed and working in Azure
 - [x] Swagger works in the deployed environment
 - [x] GitHub Actions CI/CD is configured for the API
@@ -29,19 +29,18 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] IGDB search works in deployed environment
 - [x] IGDB import works in deployed environment
 
-### Confirmed current local behavior
-- [x] `SuperAdmin` role support added in codebase
-- [x] Admin user-management endpoints are implemented
-- [x] `Admin` can create `User`
-- [x] `SuperAdmin` can create `User` and `Admin`
-- [x] `SuperAdmin` can edit existing `User` / `Admin` roles
-- [x] Self-role editing is blocked
-- [x] Editing `SuperAdmin` via the admin endpoint is blocked
+### Recent codebase additions ready for deploy/smoke test
+- [x] `SuperAdmin` role added to the backend role model
+- [x] Admin user list/create endpoints added
+- [x] `SuperAdmin` role-edit endpoint support added
+- [x] Admin user deletion endpoint added
+- [x] Self-service account deletion endpoint added
+- [x] Shared user-deletion cleanup path added for dependent records
+- [x] Temporary one-time `SuperAdmin` bootstrap path added and can be disabled after use
 
 ### Important scope note
 - [x] Keep current feature status conservative
 - [x] Do not treat incomplete AI/vector-search work as complete just because deployment is working
-- [x] Do not treat local-only admin work as deployed until it is actually deployed and smoke tested
 
 ---
 
@@ -54,8 +53,22 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `POST /api/auth/register`
 - [x] `POST /api/auth/login`
 - [x] `GET /api/auth/me`
+- [x] `POST /api/auth/delete-account`
 - [x] Role seeding for `User`, `Admin`, and `SuperAdmin`
 - [x] Development admin seeding via user secrets
+
+### Admin / account management
+- [x] `GET /api/admin/users`
+- [x] `POST /api/admin/users`
+- [x] `PUT /api/admin/users/{userId}/role`
+- [x] `DELETE /api/admin/users/{userId}`
+- [x] Admin can create `User`
+- [x] `SuperAdmin` can create `Admin`
+- [x] `SuperAdmin` can grant `SuperAdmin`
+- [x] Self-role edit is blocked
+- [x] Deleting a `SuperAdmin` through the admin dashboard is blocked
+- [x] Self-delete blocks removing the last remaining `SuperAdmin`
+- [x] Temporary bootstrap endpoint exists for one-time elevation when explicitly enabled
 
 ### Games / catalog
 - [x] `Game`
@@ -118,15 +131,6 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `DELETE /api/follows/{userId}`
 - [x] `GET /api/feed`
 
-### Admin user management
-- [x] `AdminController`
-- [x] `IAdminService`
-- [x] `AdminService`
-- [x] Admin DTOs
-- [x] `GET /api/admin/users`
-- [x] `POST /api/admin/users`
-- [x] `PUT /api/admin/users/{userId}/role`
-
 ### AI stubs
 - [x] `IRecommendationService`
 - [x] `IReviewAssistantService`
@@ -162,8 +166,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `Game.IgdbId` unique filtered index when present
 - [x] Prevent self-follow
 - [x] Keep `GameLog.Rating` as the rating source of truth
-- [x] Block admin role self-demotion through the admin endpoint
-- [x] Block editing `SuperAdmin` role assignments through the admin endpoint
+- [x] User deletion cleans up dependent follow/comment/like data before account removal
 
 ---
 
@@ -186,8 +189,12 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Protected endpoint auth behavior
 - [x] Authenticated IGDB endpoint protection
 - [x] WebApplicationFactory happy-path flows for implemented slices
-- [x] Admin endpoint integration tests
-- [x] SuperAdmin permission-path tests
+- [x] Admin user list/create/role-edit permission tests
+
+### Next backend tests to add
+- [ ] Self-delete account integration tests
+- [ ] Admin delete-user integration tests
+- [ ] `SuperAdmin` grant/delete guardrail tests for the latest account-management additions
 
 ---
 
@@ -206,18 +213,23 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Keep Azure config values out of docs when not needed
 - [x] Keep local and deployed smoke tests separate from feature-completion claims
 - [x] Keep local and production databases/configuration separated
-- [ ] Deploy and smoke test the newer admin endpoints in production
+
+### Admin/account smoke tests for next deploy
+- [ ] Verify `GET /api/admin/users` works in production for Admin/SuperAdmin
+- [ ] Verify `POST /api/admin/users` respects Admin vs `SuperAdmin` role limits
+- [ ] Verify `PUT /api/admin/users/{userId}/role` works only for `SuperAdmin`
+- [ ] Verify `DELETE /api/admin/users/{userId}` guardrails in production
+- [ ] Verify `POST /api/auth/delete-account` with both failure and success cases in production
 
 ---
 
 ## 5) Remaining backend work
 
 ### Higher-priority next work
-- [ ] Deploy and smoke test the admin user-management endpoints in production
 - [ ] Extract auth token generation into a dedicated service
-- [ ] Add production-friendly admin/bootstrap tooling
 - [ ] Add global exception handling middleware
 - [ ] Add structured logging / production diagnostics hardening
+- [ ] Decide whether the temporary bootstrap controller should remain in the final delivered codebase or be removed after production setup is stable
 
 ### Real integration work
 - [ ] Replace AI stubs with real Azure AI implementation
@@ -227,7 +239,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 ### Potential cleanup / polish
 - [ ] Review production-friendly diagnostics strategy
 - [ ] Add clearer deployment documentation/examples where safe
-- [ ] Revisit whether admin review moderation is worth adding before final handoff
+- [ ] Revisit any admin/demo tooling needed for the final presentation
 - [ ] Clean up any optional catalog seeding/import helper scripts before final handoff
 
 ---
@@ -240,4 +252,3 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
 - The backend is live and real IGDB integration is in place, but AI/vector-search surfaces are still intentionally stubbed.
-- Admin user-management work is implemented locally and should be documented/deployed conservatively.

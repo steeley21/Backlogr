@@ -6,7 +6,7 @@ ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app 
 
 ## Current Status
 
-The backend is deployed and working in Azure for the current MVP feature set, and the current local codebase now also includes admin user-management endpoints plus `SuperAdmin` support that have been verified locally with passing automated tests.
+The backend is **deployed and working in Azure** for the current MVP, and the current codebase now also includes the new admin/user-management and account-deletion work that is ready for deployment and smoke testing.
 
 **Production API URL:** `https://backlograpi.azurewebsites.net`
 
@@ -30,6 +30,7 @@ Implemented so far:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
   - `GET /api/auth/me`
+  - `POST /api/auth/delete-account`
 - Library/logging endpoints:
   - `GET /api/library/me`
   - `POST /api/library`
@@ -46,17 +47,20 @@ Implemented so far:
   - `POST /api/follows/{userId}`
   - `DELETE /api/follows/{userId}`
   - `GET /api/feed`
-- Admin user-management endpoints:
+- Admin endpoints:
   - `GET /api/admin/users`
   - `POST /api/admin/users`
   - `PUT /api/admin/users/{userId}/role`
+  - `DELETE /api/admin/users/{userId}`
+- Temporary bootstrap endpoint for one-time `SuperAdmin` elevation when explicitly enabled:
+  - `POST /api/bootstrap/superadmin`
 - AI stub endpoints:
   - `POST /api/ai/recommendations`
   - `POST /api/ai/review-assistant`
   - `GET /api/ai/semantic-search`
-- Automated tests covering services, protected routes, authenticated endpoint flows, and admin permission rules across implemented slices
+- Automated tests covering services, protected routes, and authenticated endpoint flows across implemented slices
 
-### Current deployed behavior
+### Confirmed deployed behavior
 - Swagger is available for the deployed API.
 - Register, login, library, and feed flows are working in the deployed environment at the same level they were working in development.
 - Feed includes the **current user’s own activity** in addition to activity from followed users.
@@ -65,22 +69,19 @@ Implemented so far:
 - Browse/search can use the local catalog first and pull in IGDB-backed results through the backend search flow.
 - AI surfaces are still stub-backed for now.
 
-### Current locally verified behavior
-- `SuperAdmin` role seeding works in development.
-- Admin user-management endpoints are working locally.
-- `Admin` can create `User` accounts.
-- `SuperAdmin` can create `User` and `Admin` accounts.
-- `SuperAdmin` can change existing `User` / `Admin` roles.
-- Self-role editing is intentionally blocked.
-- `SuperAdmin` role editing through the admin endpoint is intentionally blocked.
-- Automated tests for the admin endpoints and `SuperAdmin` permission paths are passing locally.
+### Latest codebase additions ready for deploy/smoke test
+- Admin user list/create/edit/delete flows are implemented.
+- `SuperAdmin` role assignment is supported through the admin role-update flow.
+- Self-service account deletion is implemented with username + current-password confirmation.
+- Account deletion uses a shared cleanup path for dependent social/review data.
+- The temporary bootstrap endpoint should remain **disabled** during normal operation and only be enabled for a controlled one-time elevation scenario.
 
 Not implemented yet:
 - Real Azure AI / Azure AI Search integration
 - Production-grade global exception handling middleware
 - Structured logging / production diagnostics hardening
-- Production/admin bootstrap strategy beyond current development seeding
-- Admin review moderation endpoints/UI
+- Review moderation/admin content-management endpoints
+- Public/admin audit trail tooling
 
 ---
 
@@ -106,6 +107,7 @@ Backlogr.Api/
 │   ├── AdminController.cs
 │   ├── AiController.cs
 │   ├── AuthController.cs
+│   ├── BootstrapController.cs
 │   ├── CommentsController.cs
 │   ├── FeedController.cs
 │   ├── FollowsController.cs
@@ -119,8 +121,8 @@ Backlogr.Api/
 │   ├── DevelopmentDataSeeder.cs
 │   └── IdentityDataSeeder.cs
 ├── DTOs/
-│   ├── Admin/
 │   ├── AI/
+│   ├── Admin/
 │   ├── Auth/
 │   ├── Feed/
 │   ├── Games/
@@ -149,7 +151,6 @@ Backlogr.Api/
 ### Identity
 - `ApplicationUser`
 - `ApplicationRole`
-- role names currently include `User`, `Admin`, and `SuperAdmin`
 
 ### Catalog
 - `Game`
@@ -235,16 +236,6 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 - duplicate follow is treated as a no-op
 - unfollow missing relationship is treated as a no-op
 
-### Admin user-management rules
-- `GET /api/admin/users` requires `Admin` or `SuperAdmin`
-- `POST /api/admin/users` requires `Admin` or `SuperAdmin`
-- `PUT /api/admin/users/{userId}/role` requires `SuperAdmin`
-- `Admin` can create `User`
-- `SuperAdmin` can create `User` and `Admin`
-- the role-edit endpoint only supports changing between `User` and `Admin`
-- self-role editing is blocked
-- editing a `SuperAdmin` account through the admin endpoint is blocked
-
 ---
 
 ## Local Setup
@@ -276,7 +267,7 @@ Recommended local secrets shape:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=BacklogrDev;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True"
+    "DefaultConnection": "Server=(localdb)\MSSQLLocalDB;Database=BacklogrDev;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True"
   },
   "Jwt": {
     "Key": "replace-with-a-long-random-dev-secret",
@@ -350,16 +341,13 @@ In development, startup currently seeds:
 - roles: `User`, `Admin`, `SuperAdmin`
 - one temporary test game for local development/testing
 - an optional development admin account when `SeedAdmin` values are present in user secrets
+- the development admin account is elevated to `SuperAdmin` for local admin testing
 
 Current seeded test game id:
 
 ```text
 11111111-1111-1111-1111-111111111111
 ```
-
-Current local development expectation:
-- the seeded development admin can be elevated to `SuperAdmin` for local admin testing
-- this is intended for development/demo use and is not a production bootstrap strategy
 
 This is only intended for local development/testing.
 
@@ -371,6 +359,16 @@ This is only intended for local development/testing.
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
+- `POST /api/auth/delete-account`
+
+### Admin
+- `GET /api/admin/users`
+- `POST /api/admin/users`
+- `PUT /api/admin/users/{userId}/role`
+- `DELETE /api/admin/users/{userId}`
+
+### Bootstrap
+- `POST /api/bootstrap/superadmin`
 
 ### Games
 - `GET /api/games`
@@ -403,11 +401,6 @@ This is only intended for local development/testing.
 
 ### Feed
 - `GET /api/feed`
-
-### Admin
-- `GET /api/admin/users`
-- `POST /api/admin/users`
-- `PUT /api/admin/users/{userId}/role`
 
 ### AI (stub)
 - `POST /api/ai/recommendations`
@@ -443,11 +436,12 @@ Current automated coverage includes:
 - AI stub service tests
 - AI unauthorized route tests
 - authenticated AI flow tests
-- admin unauthorized route tests
-- admin authenticated flow tests
-- `SuperAdmin` permission-path tests for create/edit-role flows
+- admin integration tests for user list/create/role-edit permissions
 
-All current backend tests are passing locally.
+Recommended next test additions:
+- self-delete account flow tests
+- admin delete-user flow tests
+- `SuperAdmin` grant/delete guardrail tests for the latest account-management additions
 
 Run tests from `Backlogr.Api` or repo root:
 
@@ -459,56 +453,6 @@ dotnet test
 
 ## Security / Config Notes
 
-- Keep JWT keys, IGDB secrets, and connection strings out of tracked config files.
-- Use **User Secrets** for local development only.
-- Use **Azure App Service configuration** for production only.
-- Keep local and production databases separate.
-- Avatar handling is URL-only for now.
-- No file upload/storage is implemented yet.
-- Test authentication uses a header-driven fake auth handler only in the test host.
-
----
-
-## Deployment Notes
-
-Current deployment status:
-- API is deployed and working in Azure App Service.
-- Swagger is working in the deployed environment.
-- GitHub Actions CI/CD is configured for the API.
-- Frontend-to-API integration is working against the deployed API.
-- Production IGDB credentials are configured in Azure and the live API can perform IGDB search/import.
-
-Deployment notes:
-- Keep production connection strings, JWT settings, and IGDB settings in Azure configuration.
-- Keep CORS aligned with both localhost and the deployed frontend origin.
-- Point the frontend `NUXT_PUBLIC_API_BASE` to the deployed API URL.
-- Re-run smoke tests after any deployment/config changes.
-
-Local-only features verified after the current deployment pass:
-- `SuperAdmin` role support
-- admin user-management endpoints
-- role-edit restrictions for self/protected accounts
-- admin endpoint automated tests
-
-Before or immediately after deploying the newer admin changes, re-run this smoke-test checklist against production:
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `GET /api/admin/users` as `Admin` or `SuperAdmin`
-- `POST /api/admin/users` as `Admin` creating `User`
-- `POST /api/admin/users` as `SuperAdmin` creating `Admin`
-- `PUT /api/admin/users/{userId}/role` as `SuperAdmin`
-- confirm self-role editing stays blocked
-- confirm editing a `SuperAdmin` through the endpoint stays blocked
-
----
-
-## Current Gaps / Next Steps
-
-Recommended next backend work:
-1. Deploy and smoke test the admin user-management endpoints in production.
-2. Extract auth token generation into a dedicated service.
-3. Add production-friendly admin/bootstrap tooling.
-4. Add global exception handling middleware.
-5. Add structured logging/diagnostics hardening.
-6. Replace AI stubs with Azure AI / Azure AI Search implementations.
-7. Add embeddings/vector search wiring.
+- Keep JWT keys, IGDB secrets, bootstrap secrets, and connection strings out of tracked config files.
+- Keep the temporary bootstrap endpoint disabled unless you are intentionally doing a one-time controlled elevation.
+- If you use the bootstrap endpoint in production, disable it again immediately after success and rotate/remove the secret.

@@ -148,6 +148,7 @@ builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
 builder.Services.AddScoped<ISuperAdminBootstrapService, SuperAdminBootstrapService>();
 
 builder.Services.AddHttpClient<ITwitchTokenService, TwitchTokenService>(httpClient =>

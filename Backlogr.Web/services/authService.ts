@@ -2,6 +2,7 @@
 import { useApi } from '~/services/api'
 import type {
   AuthResponseDto,
+  DeleteAccountRequestDto,
   LoginRequestDto,
   MeResponseDto,
   RegisterRequestDto,
@@ -23,4 +24,8 @@ export async function getMe(): Promise<MeResponseDto> {
   const api = useApi()
   const response = await api.get<MeResponseDto>('/api/Auth/me')
   return response.data
+}
+export async function deleteAccount(payload: DeleteAccountRequestDto): Promise<void> {
+  const api = useApi()
+  await api.post('/api/Auth/delete-account', payload)
 }

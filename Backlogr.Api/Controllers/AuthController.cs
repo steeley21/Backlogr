@@ -6,6 +6,7 @@ using Backlogr.Api.Common;
 using Backlogr.Api.DTOs.Auth;
 using Backlogr.Api.Models.Entities;
 using Backlogr.Api.Options;
+using Backlogr.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -21,17 +22,20 @@ public sealed class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly IUserDeletionService _userDeletionService;
     private readonly JwtOptions _jwtOptions;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         RoleManager<ApplicationRole> roleManager,
+        IUserDeletionService userDeletionService,
         IOptions<JwtOptions> jwtOptions)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _roleManager = roleManager;
+        _userDeletionService = userDeletionService;
         _jwtOptions = jwtOptions.Value;
     }
 
@@ -135,6 +139,63 @@ public sealed class AuthController : ControllerBase
         var response = BuildAuthResponse(user, roles);
 
         return Ok(response);
+    }
+
+
+    [HttpPost("delete-account")]
+    [Authorize]
+    public async Task<IActionResult> DeleteAccount(DeleteAccountRequestDto dto, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        if (dto is null ||
+            string.IsNullOrWhiteSpace(dto.Password) ||
+            string.IsNullOrWhiteSpace(dto.ConfirmationUserName))
+        {
+            return BadRequest("Password and username confirmation are required.");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        if (!string.Equals(user.UserName, dto.ConfirmationUserName.Trim(), StringComparison.Ordinal))
+        {
+            return BadRequest("Username confirmation did not match your account.");
+        }
+
+        var passwordResult = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            dto.Password,
+            lockoutOnFailure: false);
+
+        if (!passwordResult.Succeeded)
+        {
+            return BadRequest("Your password was incorrect.");
+        }
+
+        if (await _userManager.IsInRoleAsync(user, RoleNames.SuperAdmin) &&
+            await _userDeletionService.IsLastRemainingSuperAdminAsync(user.Id, cancellationToken))
+        {
+            return Conflict("You cannot delete the last remaining SuperAdmin account.");
+        }
+
+        try
+        {
+            await _userDeletionService.DeleteUserAsync(user, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
 
     [HttpGet("me")]

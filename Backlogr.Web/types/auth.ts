@@ -31,3 +31,7 @@ export interface MeResponseDto {
   bio: string | null
   roles: string[]
 }
+export interface DeleteAccountRequestDto {
+  password: string
+  confirmationUserName: string
+}

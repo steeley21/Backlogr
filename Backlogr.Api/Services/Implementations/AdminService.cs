@@ -10,10 +10,12 @@ namespace Backlogr.Api.Services.Implementations;
 public sealed class AdminService : IAdminService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUserDeletionService _userDeletionService;
 
-    public AdminService(UserManager<ApplicationUser> userManager)
+    public AdminService(UserManager<ApplicationUser> userManager, IUserDeletionService userDeletionService)
     {
         _userManager = userManager;
+        _userDeletionService = userDeletionService;
     }
 
     public async Task<IReadOnlyList<AdminUserSummaryDto>> GetUsersAsync(CancellationToken cancellationToken = default)
@@ -55,6 +57,13 @@ public sealed class AdminService : IAdminService
             throw new ArgumentException("Username, display name, email, password, and role are required.");
         }
 
+        var canManageSuperAdmins = await _userManager.IsInRoleAsync(currentUser, RoleNames.SuperAdmin);
+
+        if (dto.Role == AdminAssignableRole.SuperAdmin)
+        {
+            throw new UnauthorizedAccessException("SuperAdmin accounts cannot be created directly. Promote an existing account instead.");
+        }
+
         var requestedRoleName = dto.Role switch
         {
             AdminAssignableRole.User => RoleNames.User,
@@ -62,9 +71,7 @@ public sealed class AdminService : IAdminService
             _ => throw new ArgumentOutOfRangeException(nameof(dto.Role), "Unsupported role selection.")
         };
 
-        var canCreateAdmin = await _userManager.IsInRoleAsync(currentUser, RoleNames.SuperAdmin);
-
-        if (requestedRoleName == RoleNames.Admin && !canCreateAdmin)
+        if (requestedRoleName == RoleNames.Admin && !canManageSuperAdmins)
         {
             throw new UnauthorizedAccessException("Only SuperAdmin can create Admin accounts.");
         }
@@ -142,15 +149,10 @@ public sealed class AdminService : IAdminService
         }
 
         var targetUserRoles = await _userManager.GetRolesAsync(targetUser);
-        if (targetUserRoles.Contains(RoleNames.SuperAdmin))
-        {
-            throw new InvalidOperationException("SuperAdmin accounts cannot be edited from this dashboard.");
-        }
-
         var desiredRoles = BuildRolesForAssignableRole(dto.Role);
 
         var rolesToRemove = targetUserRoles
-            .Where(role => role is RoleNames.User or RoleNames.Admin)
+            .Where(role => role is RoleNames.User or RoleNames.Admin or RoleNames.SuperAdmin)
             .Except(desiredRoles)
             .ToArray();
 
@@ -182,12 +184,50 @@ public sealed class AdminService : IAdminService
         return MapUser(targetUser, updatedRoles);
     }
 
+    public async Task DeleteUserAsync(
+        Guid currentUserId,
+        Guid targetUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUser = await _userManager.FindByIdAsync(currentUserId.ToString());
+        if (currentUser is null)
+        {
+            throw new UnauthorizedAccessException("Current user was not found.");
+        }
+
+        var isCurrentUserSuperAdmin = await _userManager.IsInRoleAsync(currentUser, RoleNames.SuperAdmin);
+        if (!isCurrentUserSuperAdmin)
+        {
+            throw new UnauthorizedAccessException("Only SuperAdmin can delete users.");
+        }
+
+        if (currentUserId == targetUserId)
+        {
+            throw new InvalidOperationException("You cannot delete your own account from the admin dashboard.");
+        }
+
+        var targetUser = await _userManager.FindByIdAsync(targetUserId.ToString());
+        if (targetUser is null)
+        {
+            throw new KeyNotFoundException("That user was not found.");
+        }
+
+        var targetUserRoles = await _userManager.GetRolesAsync(targetUser);
+        if (targetUserRoles.Contains(RoleNames.SuperAdmin))
+        {
+            throw new InvalidOperationException("SuperAdmin accounts cannot be deleted from this dashboard.");
+        }
+
+        await _userDeletionService.DeleteUserAsync(targetUser, cancellationToken);
+    }
+
     private static List<string> BuildRolesForAssignableRole(AdminAssignableRole role)
     {
         return role switch
         {
             AdminAssignableRole.User => [RoleNames.User],
             AdminAssignableRole.Admin => [RoleNames.User, RoleNames.Admin],
+            AdminAssignableRole.SuperAdmin => [RoleNames.User, RoleNames.Admin, RoleNames.SuperAdmin],
             _ => throw new ArgumentOutOfRangeException(nameof(role), "Unsupported role selection.")
         };
     }
