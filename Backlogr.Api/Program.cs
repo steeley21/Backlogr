@@ -1,16 +1,18 @@
+using System;
+using System.Text;
+using System.Text.Json.Serialization;
 using Backlogr.Api.Data;
+using Backlogr.Api.Extensions;
 using Backlogr.Api.Models.Entities;
 using Backlogr.Api.Options;
+using Backlogr.Api.Services.Implementations;
+using Backlogr.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using System.Text;
-using Backlogr.Api.Services.Interfaces;
-using Backlogr.Api.Services.Implementations;
-using System.Text.Json.Serialization;
-using Backlogr.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,16 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Key) ||
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
 
+builder.Services.AddOptions<IgdbOptions>()
+    .Bind(builder.Configuration.GetSection(IgdbOptions.SectionName))
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ClientId),
+        "Igdb:ClientId is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ClientSecret),
+        "Igdb:ClientSecret is required.")
+    .ValidateOnStart();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -48,7 +60,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Backlogr.Api",
-        Version = "v1"
+        Version = "v1",
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -58,12 +70,12 @@ builder.Services.AddSwaggerGen(options =>
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         BearerFormat = "JWT",
-        Scheme = "bearer"
+        Scheme = "bearer",
     });
 
     options.AddSecurityRequirement(document => new()
     {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
     });
 });
 
@@ -104,7 +116,7 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtOptions.Key)),
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(2)
+            ClockSkew = TimeSpan.FromMinutes(2),
         };
     });
 
@@ -124,13 +136,28 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<ILibraryService, LibraryService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IReviewInteractionService, ReviewInteractionService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
-builder.Services.AddScoped<IIgdbService, StubIgdbService>();
+
+builder.Services.AddHttpClient<ITwitchTokenService, TwitchTokenService>(httpClient =>
+{
+    httpClient.Timeout = TimeSpan.FromSeconds(15);
+});
+
+builder.Services.AddHttpClient<IIgdbService, IgdbService>((serviceProvider, httpClient) =>
+{
+    var igdbOptions = serviceProvider.GetRequiredService<IOptions<IgdbOptions>>().Value;
+
+    httpClient.BaseAddress = new Uri(igdbOptions.ApiBaseUrl);
+    httpClient.Timeout = TimeSpan.FromSeconds(20);
+});
+
 builder.Services.AddScoped<IRecommendationService, StubRecommendationService>();
 builder.Services.AddScoped<IReviewAssistantService, StubReviewAssistantService>();
 builder.Services.AddScoped<ISemanticSearchService, StubSemanticSearchService>();
@@ -142,6 +169,7 @@ await IdentityDataSeeder.SeedRolesAsync(app.Services);
 if (app.Environment.IsDevelopment())
 {
     await DevelopmentDataSeeder.SeedTestGameAsync(app.Services);
+    await DevelopmentAdminSeeder.SeedAdminAsync(app.Services, app.Configuration);
 }
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))

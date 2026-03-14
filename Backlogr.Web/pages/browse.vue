@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from '#imports'
+import { useRoute, useRouter } from '#imports'
 import { AxiosError } from 'axios'
 import SectionHeader from '~/components/layout/SectionHeader.vue'
 import GamePosterCard from '~/components/game/GamePosterCard.vue'
-import { getGames } from '~/services/gameService'
-import type { GameSummaryResponseDto } from '~/types/game'
+import { importGameFromIgdb, searchBrowseGames } from '~/services/gameService'
+import type { GameBrowseResultDto } from '~/types/game'
 
 const route = useRoute()
+const router = useRouter()
 
 const fallbackCoverUrl = '/images/fallback-game-cover.svg'
 
-const games = ref<GameSummaryResponseDto[]>([])
+const games = ref<GameBrowseResultDto[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const activeGameKey = ref('')
 
 const q = computed(() => {
   const value = route.query.q
@@ -32,7 +34,19 @@ const headerRightText = computed(() => {
   return 'Discover games'
 })
 
-function formatSubtitle(game: GameSummaryResponseDto): string {
+function getGameKey(game: GameBrowseResultDto): string {
+  if (game.gameId) {
+    return game.gameId
+  }
+
+  if (game.igdbId !== null) {
+    return `igdb-${game.igdbId}`
+  }
+
+  return game.title
+}
+
+function formatSubtitle(game: GameBrowseResultDto): string {
   const parts: string[] = []
 
   if (game.genres) {
@@ -53,6 +67,10 @@ function getErrorMessage(error: unknown): string {
     if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
       return apiMessage
     }
+
+    if (Array.isArray(apiMessage) && apiMessage.length > 0) {
+      return apiMessage.join(', ')
+    }
   }
 
   return 'Unable to load games right now. Please try again.'
@@ -63,7 +81,7 @@ async function loadGames(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    games.value = await getGames({
+    games.value = await searchBrowseGames({
       query: q.value || undefined,
       take: 30,
     })
@@ -74,6 +92,55 @@ async function loadGames(): Promise<void> {
   }
   finally {
     isLoading.value = false
+  }
+}
+
+async function handleGameSelected(game: GameBrowseResultDto): Promise<void> {
+  const gameKey = getGameKey(game)
+
+  if (activeGameKey.value) {
+    return
+  }
+
+  activeGameKey.value = gameKey
+  errorMessage.value = ''
+
+  try {
+    let localGameId = game.gameId
+
+    if (!localGameId) {
+      if (game.igdbId === null) {
+        throw new Error('This game could not be opened.')
+      }
+
+      const importedGame = await importGameFromIgdb(game.igdbId)
+      localGameId = importedGame.gameId
+
+      games.value = games.value.map((currentGame) => {
+        if (getGameKey(currentGame) !== gameKey) {
+          return currentGame
+        }
+
+        return {
+          ...currentGame,
+          gameId: importedGame.gameId,
+          igdbId: importedGame.igdbId,
+          title: importedGame.title,
+          coverImageUrl: importedGame.coverImageUrl ?? currentGame.coverImageUrl,
+          releaseDate: importedGame.releaseDate ?? currentGame.releaseDate,
+          platforms: importedGame.platforms ?? currentGame.platforms,
+          genres: importedGame.genres ?? currentGame.genres,
+        }
+      })
+    }
+
+    await router.push(`/game/${localGameId}`)
+  }
+  catch (error: unknown) {
+    errorMessage.value = getErrorMessage(error)
+  }
+  finally {
+    activeGameKey.value = ''
   }
 }
 
@@ -135,17 +202,21 @@ watch(
     <v-row v-else dense>
       <v-col
         v-for="game in games"
-        :key="game.gameId"
+        :key="getGameKey(game)"
         cols="6"
         sm="4"
         md="3"
         lg="2"
       >
+
         <GamePosterCard
           :title="game.title"
           :cover-url="game.coverImageUrl ?? fallbackCoverUrl"
           :subtitle="formatSubtitle(game)"
-          :to="`/game/${game.gameId}`"
+          :loading="activeGameKey === getGameKey(game)"
+          :disabled="activeGameKey.length > 0 && activeGameKey !== getGameKey(game)"
+          clickable
+          @click="handleGameSelected(game)"
         />
       </v-col>
     </v-row>
