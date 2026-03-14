@@ -1,8 +1,8 @@
 # FRONTEND_TODO — Backlogr.Web
 
-Last updated: 2026-03-13
+Last updated: 2026-03-14
 
-This checklist reflects the current integrated frontend state after deployment and what is still left for polish and feature completion.
+This checklist reflects the current integrated frontend state after deployment and the new merged browse/IGDB flow.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -24,15 +24,16 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Library flow works in deployed environment
 - [x] Feed flow loads in deployed environment
 - [x] Frontend can reach deployed API successfully
+- [x] Browse is backed by the live merged catalog/search flow
 
 ### Current known limitations
 - [ ] Public profile pages are not built yet
 - [ ] Follow/unfollow UI is not built yet
 - [ ] Review edit/delete UI is not built yet
 - [ ] Feed like/comment UI is not built yet
-- [ ] IGDB search/import UI is not built yet
 - [ ] Semantic search UI is not built yet
 - [ ] Frontend tests are not written yet
+- [ ] Dedicated admin/import management UI is not built
 
 ---
 
@@ -41,12 +42,12 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 ### Runtime config + environment
 - [x] `nuxt.config.ts` reads `runtimeConfig.public.apiBase`
 - [x] Shared API client created in `services/api.ts`
-- [ ] Add `.env.example` for frontend:
-  - `NUXT_PUBLIC_API_BASE=...`
+- [x] `.env.example` added for frontend runtime config
 
 ### Typed DTOs + shared models
 - [x] Auth types
 - [x] Game types
+- [x] Browse-result types for merged local/IGDB search
 - [x] Feed types
 - [x] Library types
 - [x] Review types
@@ -63,7 +64,6 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 ### Route protection
 - [x] Global auth middleware added
 - [x] Core app routes gated behind auth
-- [ ] Admin-only middleware/page flow for IGDB import UI
 
 ---
 
@@ -121,12 +121,13 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] “My log” panel
 
 ### Browse / search
-- [x] Browse wired to local cached game search
+- [x] Browse wired to merged local + IGDB-backed search
 - [x] Query-string search support
 - [x] Deployment-safe local fallback posters
+- [x] Automatic import-on-click flow for non-local results
+- [x] Route imported result to local `/game/:id`
 - [ ] Paging
 - [ ] Semantic search toggle / UI
-- [ ] IGDB search surface
 
 ### AI Picks
 - [x] Recommendations page wired to API stub
@@ -167,18 +168,17 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 
 ---
 
-## 5) IGDB + search work still needed
+## 5) Search / discovery work still needed
 
-Locked decisions remain:
-- Authenticated users can search IGDB
-- Admin only can import IGDB games into the local cache
+Current search decisions:
+- Browse should not visually signal whether a game was already in the local DB
+- Search should prefer local results first
+- Missing local results can be imported behind the scenes through the current browse flow
 
 ### Remaining frontend tasks
-- [ ] Add IGDB search UI
-- [ ] Show IGDB results in browse flow
-- [ ] Add admin-only import actions
-- [ ] Route imported result to local `/game/:id`
 - [ ] Add semantic search UI for `GET /api/ai/semantic-search`
+- [ ] Add optional browse/result polish for larger catalogs
+- [ ] Decide whether any explicit “import management” UI is needed for admin/demo purposes
 
 ---
 
@@ -211,6 +211,7 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 ### Component / page smoke tests
 - [ ] Auth pages
 - [ ] Feed render
+- [ ] Browse click/import flow
 - [ ] Log form validation
 - [ ] Recommend page render
 
@@ -220,8 +221,8 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ### Configuration
 - [x] Runtime API base is configurable
+- [x] `.env.example` exists
 - [x] Production build succeeds locally
-- [x] Add `.env.example`
 - [x] Set `NUXT_PUBLIC_API_BASE` in Azure Static Web Apps
 - [x] Confirm deployed API URL is correct in production
 
@@ -245,14 +246,14 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 1. Write frontend service/store tests.
 2. Build public profile + follow UI.
 3. Build review edit/delete UI.
-4. Add IGDB search/import UI.
-5. Add semantic search UI.
-6. Add feed like/comment UI.
+4. Add semantic search UI.
+5. Add feed like/comment UI.
+6. Tighten shared API error handling and feedback.
 
 ### After that
 1. Add direct-route production verification.
 2. Do a final accessibility/mobile polish pass.
-3. Tighten shared error handling and feedback patterns.
+3. Decide whether any admin/demo-only catalog tooling is still worth adding.
 
 ---
 

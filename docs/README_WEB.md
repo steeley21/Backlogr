@@ -39,7 +39,14 @@ The frontend works locally and is now deployed against the current `Backlogr.Api
 - Shared Axios API client with bearer token support and 401 handling
 - Pinia auth store with token persistence + user rehydration
 - Live feed page wired to `GET /api/feed`
-- Live browse page wired to `GET /api/games`
+- Live browse page wired to the merged game search flow:
+  - `GET /api/games/search`
+  - local catalog results first
+  - IGDB-backed fallback results from the API when needed
+- Browse click flow now:
+  - routes directly to `/game/[id]` when a result already exists locally
+  - imports automatically through `POST /api/igdb/import/{igdbId}` when needed
+  - then routes to the normal local game detail page
 - Live game detail page wired to `GET /api/games/{gameId}`
 - Live library page wired to `GET /api/library/me`
 - Log page wired to `POST /api/library`
@@ -55,16 +62,17 @@ The frontend works locally and is now deployed against the current `Backlogr.Api
 - Deployed frontend loads successfully.
 - Register, login, library, and feed are working in production at the same level they were working in development.
 - Frontend is successfully calling the deployed API.
+- The production browse catalog is now populated from the live backend catalog.
 
 ### Current known limitations
 - Public profile pages are not built yet
 - Follow/unfollow UI is not built yet
 - Review edit/delete UI is not built yet
 - Feed like/comment UI is not built yet
-- IGDB search/import UI is not built yet
 - Semantic search UI is not built yet
 - Frontend tests are not written yet
-- Several backend-connected features are intentionally still limited to the current MVP/stub level
+- AI-backed features are still limited to the current backend stub behavior
+- There is no separate admin/import management UI; IGDB import is intentionally hidden behind the browse flow
 
 ---
 
@@ -94,7 +102,14 @@ The frontend works locally and is now deployed against the current `Backlogr.Api
 
 ### Feed
 - Feed is live against the backend.
-- Backend now includes the current user’s own activity along with followed-user activity.
+- Backend includes the current user’s own activity along with followed-user activity.
+
+### Browse / catalog
+- Browse is no longer local-only.
+- Query-string search is supported.
+- The page now uses the merged backend browse endpoint rather than only `GET /api/games`.
+- The UI does **not** visually signal whether a result was already in the local database.
+- Imported results are normalized back into the standard local `gameId` route flow.
 
 ### Library / logging
 - Library is loaded from live backend data.
@@ -145,6 +160,8 @@ NUXT_PUBLIC_API_BASE=https://backlograpi.azurewebsites.net
 
 Keep this configurable per environment.
 
+If you are running against the local API during development, point `NUXT_PUBLIC_API_BASE` at the local API URL instead.
+
 ---
 
 ## Current Frontend Structure
@@ -162,6 +179,7 @@ Backlogr.Web/
 │   ├── types/
 │   └── utils/
 ├── public/
+├── .env.example
 ├── nuxt.config.ts
 ├── package.json
 └── tsconfig.json
@@ -181,21 +199,20 @@ Post-deployment validation completed:
 - frontend loads successfully in production
 - API integration works from the deployed frontend
 - core auth/library/feed flows load as expected in production
+- browse is backed by the live catalog/search flow
 
 ---
 
 ## Remaining Frontend Work
 
 Recommended next frontend work:
-1. Add `.env.example`.
-2. Write frontend service/store/component tests.
-3. Build public profile pages.
-4. Build follow/unfollow UI.
-5. Build review edit/delete UI.
-6. Add feed like/comment UI.
-7. Add IGDB search/import UI.
-8. Add semantic search UI.
-9. Do a final accessibility/mobile polish pass.
+1. Write frontend service/store/component tests.
+2. Build public profile pages.
+3. Build follow/unfollow UI.
+4. Build review edit/delete UI.
+5. Add feed like/comment UI.
+6. Add semantic search UI.
+7. Do a final accessibility/mobile polish pass.
 
 ---
 
@@ -203,4 +220,4 @@ Recommended next frontend work:
 
 - Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
 - Do not overstate incomplete features just because deployment is now live.
-- The main remaining work is feature completion, test coverage, and replacing current stubs with real integrations.
+- The frontend is now beyond the placeholder-only stage, but several social and AI surfaces still need completion.

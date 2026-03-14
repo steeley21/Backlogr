@@ -12,7 +12,7 @@ The backend is now **deployed and working in Azure** and is serving the current 
 
 Implemented so far:
 - ASP.NET Core Web API on **.NET 10**
-- Entity Framework Core + SQL Server for local and deployed environments
+- Entity Framework Core + SQL Server for deployed environments and **LocalDB** for local development
 - ASP.NET Core Identity with **Guid** keys
 - JWT authentication
 - Role seeding for `User` and `Admin`
@@ -21,10 +21,11 @@ Implemented so far:
 - GitHub Actions CI/CD for API deployment
 - Game catalog endpoints:
   - `GET /api/games`
+  - `GET /api/games/search`
   - `GET /api/games/{gameId}`
-- IGDB stub endpoints:
-  - `GET /api/igdb/search`
-  - `POST /api/igdb/import/{igdbId}` *(admin only)*
+- Real IGDB-backed catalog endpoints:
+  - `GET /api/igdb/search` *(authenticated)*
+  - `POST /api/igdb/import/{igdbId}` *(authenticated)*
 - Auth endpoints:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
@@ -56,14 +57,15 @@ Implemented so far:
 - Register, login, library, and feed flows are working in the deployed environment at the same level they were working in development.
 - Feed includes the **current user’s own activity** in addition to activity from followed users.
 - `GameLog.Rating` remains the source of truth for ratings.
-- IGDB and AI surfaces are still stub-backed for now.
+- IGDB search and import are now working against the real IGDB API in both local development and production.
+- Browse/search can now use the local catalog first and pull in IGDB-backed results through the backend search flow.
+- AI surfaces are still stub-backed for now.
 
 Not implemented yet:
-- Real IGDB API integration
 - Real Azure AI / Azure AI Search integration
-- Admin bootstrap flow
-- Global exception handling middleware
+- Production-grade global exception handling middleware
 - Structured logging / production diagnostics hardening
+- Production/admin bootstrap strategy beyond current development seeding
 
 ---
 
@@ -72,7 +74,7 @@ Not implemented yet:
 - **.NET 10**
 - **ASP.NET Core Web API**
 - **Entity Framework Core 10**
-- **SQL Server**
+- **SQL Server / LocalDB**
 - **ASP.NET Core Identity**
 - **JWT Bearer auth**
 - **Swashbuckle / Swagger**
@@ -97,6 +99,7 @@ Backlogr.Api/
 │   └── ReviewsController.cs
 ├── Data/
 │   ├── ApplicationDbContext.cs
+│   ├── DevelopmentAdminSeeder.cs
 │   ├── DevelopmentDataSeeder.cs
 │   └── IdentityDataSeeder.cs
 ├── DTOs/
@@ -231,36 +234,50 @@ dotnet restore
 dotnet build
 ```
 
+### Local configuration model
+Use **User Secrets** for local development only.
+Use **Azure App Service configuration** for production only.
+
+Do **not** point local development at the deployed Azure SQL database.
+
 ### User secrets
 Initialize user secrets on the API project and keep secrets out of source control.
 
-Required local secrets:
+Recommended local secrets shape:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=BacklogrDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=BacklogrDev;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True"
   },
   "Jwt": {
-    "Key": "your-long-random-dev-secret",
+    "Key": "replace-with-a-long-random-dev-secret",
     "Issuer": "Backlogr.Api",
     "Audience": "Backlogr.Web"
   },
   "Igdb": {
-    "ClientId": "",
-    "ClientSecret": ""
+    "ClientId": "your-igdb-client-id",
+    "ClientSecret": "your-igdb-client-secret"
+  },
+  "SeedAdmin": {
+    "Email": "admin@backlogr.local",
+    "UserName": "admin",
+    "Password": "AdminPass123",
+    "DisplayName": "Backlogr Admin"
   }
 }
 ```
 
-Recommended commands from `Backlogr.Api`:
+If you prefer CLI commands from `Backlogr.Api`:
 
 ```powershell
 dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\MSSQLLocalDB;Database=BacklogrDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\MSSQLLocalDB;Database=BacklogrDev;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True"
 dotnet user-secrets set "Jwt:Issuer" "Backlogr.Api"
 dotnet user-secrets set "Jwt:Audience" "Backlogr.Web"
-dotnet user-secrets set "Jwt:Key" "replace-with-a-long-random-secret"
+dotnet user-secrets set "Jwt:Key" "replace-with-a-long-random-dev-secret"
+dotnet user-secrets set "Igdb:ClientId" "replace-with-your-igdb-client-id"
+dotnet user-secrets set "Igdb:ClientSecret" "replace-with-your-igdb-client-secret"
 ```
 
 ### Database migrations
@@ -304,6 +321,7 @@ Do **not** prefix it with `Bearer` in the Swagger auth dialog.
 In development, startup currently seeds:
 - roles: `User`, `Admin`
 - one temporary test game for local development/testing
+- an optional development admin account when `SeedAdmin` values are present in user secrets
 
 Current seeded test game id:
 
@@ -311,7 +329,7 @@ Current seeded test game id:
 11111111-1111-1111-1111-111111111111
 ```
 
-This is only intended for local development/testing until real game catalog + IGDB integration is in place.
+This is only intended for local development/testing.
 
 ---
 
@@ -324,11 +342,12 @@ This is only intended for local development/testing until real game catalog + IG
 
 ### Games
 - `GET /api/games`
+- `GET /api/games/search`
 - `GET /api/games/{gameId}`
 
-### IGDB (stub)
+### IGDB
 - `GET /api/igdb/search`
-- `POST /api/igdb/import/{igdbId}` *(admin only)*
+- `POST /api/igdb/import/{igdbId}`
 
 ### Library
 - `GET /api/library/me`
@@ -383,7 +402,7 @@ Current automated coverage includes:
 - authenticated feed flow tests
 - game service tests
 - games controller tests
-- IGDB auth/role/flow tests
+- IGDB authenticated search/import flow tests
 - AI stub service tests
 - AI unauthorized route tests
 - authenticated AI flow tests
@@ -399,8 +418,9 @@ dotnet test
 ## Security / Config Notes
 
 - Keep JWT keys, IGDB secrets, and connection strings out of tracked config files.
-- Use **User Secrets** for local development.
-- Production secrets belong in Azure configuration.
+- Use **User Secrets** for local development only.
+- Use **Azure App Service configuration** for production only.
+- Keep local and production databases separate.
 - Avatar handling is URL-only for now.
 - No file upload/storage is implemented yet.
 - Test authentication uses a header-driven fake auth handler only in the test host.
@@ -414,9 +434,10 @@ Current deployment status:
 - Swagger is working in the deployed environment.
 - GitHub Actions CI/CD is configured for the API.
 - Frontend-to-API integration is working against the deployed API.
+- Production IGDB credentials are configured in Azure and the live API can perform IGDB search/import.
 
 Deployment notes:
-- Keep production connection strings and JWT settings in Azure configuration.
+- Keep production connection strings, JWT settings, and IGDB settings in Azure configuration.
 - Keep CORS aligned with both localhost and the deployed frontend origin.
 - Point the frontend `NUXT_PUBLIC_API_BASE` to the deployed API URL.
 - Re-run smoke tests after any deployment/config changes.
@@ -426,9 +447,9 @@ Deployment notes:
 ## Current Gaps / Next Steps
 
 Recommended next backend work:
-1. Extract token generation into an auth/token service.
-2. Add an admin bootstrap strategy.
+1. Extract auth token generation into a dedicated service.
+2. Add production-friendly admin/bootstrap tooling.
 3. Add global exception handling middleware.
 4. Add structured logging/diagnostics hardening.
-5. Replace IGDB stubs with real IGDB integration.
-6. Replace AI stubs with Azure AI / Azure AI Search implementations.
+5. Replace AI stubs with Azure AI / Azure AI Search implementations.
+6. Add embeddings/vector search wiring.

@@ -1,8 +1,8 @@
 # BACKEND_TODO — Backlogr.Api
 
-Last updated: 2026-03-13
+Last updated: 2026-03-14
 
-This checklist reflects the current backend state after local MVP completion and live Azure deployment.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, and local/prod config cleanup.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -19,16 +19,19 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Swagger works in the deployed environment
 - [x] GitHub Actions CI/CD is configured for the API
 - [x] Frontend is successfully using the deployed API
+- [x] Local development is back on a separate LocalDB target
 
 ### Confirmed deployed behavior
 - [x] Register works in deployed environment
 - [x] Login works in deployed environment
 - [x] Library flow works in deployed environment
 - [x] Feed flow loads in deployed environment
+- [x] IGDB search works in deployed environment
+- [x] IGDB import works in deployed environment
 
 ### Important scope note
 - [x] Keep current feature status conservative
-- [x] Do not treat incomplete dev features as complete just because deployment is working
+- [x] Do not treat incomplete AI/vector-search work as complete just because deployment is working
 
 ---
 
@@ -42,6 +45,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `POST /api/auth/login`
 - [x] `GET /api/auth/me`
 - [x] Role seeding for `User` and `Admin`
+- [x] Development admin seeding via user secrets
 
 ### Games / catalog
 - [x] `Game`
@@ -49,14 +53,18 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `GameService`
 - [x] `GamesController`
 - [x] `GET /api/games`
+- [x] `GET /api/games/search`
 - [x] `GET /api/games/{gameId}`
 
-### IGDB stub slice
+### IGDB slice
 - [x] `IIgdbService`
-- [x] `StubIgdbService`
+- [x] Real `IgdbService`
+- [x] Twitch app token service / caching
 - [x] `IgdbController`
 - [x] `GET /api/igdb/search`
-- [x] `POST /api/igdb/import/{igdbId}` *(admin only)*
+- [x] `POST /api/igdb/import/{igdbId}` *(authenticated)*
+- [x] Import/update local `Game` rows by `IgdbId`
+- [x] Merge local catalog results with IGDB fallback for browse/search
 
 ### Library / logging
 - [x] `GameLog`
@@ -125,12 +133,14 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Follows migration created
 - [x] Local development database update works
 - [x] Deployed database schema was applied successfully
+- [x] Local development now targets LocalDB instead of the deployed database
 
 ### Constraints / rules
 - [x] `GameLog` unique `(UserId, GameId)`
 - [x] `Review` unique `(UserId, GameId)`
 - [x] `Follow` unique `(FollowerId, FollowingId)`
 - [x] `ReviewLike` unique `(UserId, ReviewId)`
+- [x] `Game.IgdbId` unique filtered index when present
 - [x] Prevent self-follow
 - [x] Keep `GameLog.Rating` as the rating source of truth
 
@@ -147,12 +157,13 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Ownership / authorization rules for implemented slices
 - [x] Feed aggregation rules
 - [x] Game search/detail rules
+- [x] IGDB search/import flow rules
 - [x] AI stub behavior rules
 
 ### Controller / integration tests
 - [x] Validation error status codes
 - [x] Protected endpoint auth behavior
-- [x] Admin-only endpoint protection
+- [x] Authenticated IGDB endpoint protection
 - [x] WebApplicationFactory happy-path flows for implemented slices
 
 ---
@@ -165,24 +176,25 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Production config is working
 - [x] Deployed frontend can call the deployed API
 - [x] API GitHub Actions workflow is working
+- [x] Production IGDB secrets are configured in Azure
 
 ### Keep after deployment
 - [x] Keep secrets out of tracked files
 - [x] Keep Azure config values out of docs when not needed
 - [x] Keep local and deployed smoke tests separate from feature-completion claims
+- [x] Keep local and production databases/configuration separated
 
 ---
 
 ## 5) Remaining backend work
 
 ### Higher-priority next work
-- [ ] Extract token generation into an auth/token service
-- [ ] Add admin bootstrap strategy
+- [ ] Extract auth token generation into a dedicated service
+- [ ] Add production-friendly admin/bootstrap tooling
 - [ ] Add global exception handling middleware
 - [ ] Add structured logging / production diagnostics hardening
 
 ### Real integration work
-- [ ] Replace IGDB stub with real IGDB API integration
 - [ ] Replace AI stubs with real Azure AI implementation
 - [ ] Add Azure AI Search / semantic search backing
 - [ ] Add embedding pipeline / vector search wiring
@@ -190,7 +202,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 ### Potential cleanup / polish
 - [ ] Review production-friendly diagnostics strategy
 - [ ] Add clearer deployment documentation/examples where safe
-- [ ] Revisit any admin tooling needed for final presentation/demo
+- [ ] Revisit any admin/demo tooling needed for the final presentation
+- [ ] Clean up any optional catalog seeding/import helper scripts before final handoff
 
 ---
 
@@ -201,4 +214,4 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Keep business logic in services.
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
-- The backend is now live, but several integrations are still intentionally stubbed.
+- The backend is live and real IGDB integration is in place, but AI/vector-search surfaces are still intentionally stubbed.
