@@ -221,7 +221,7 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 ### Configuration
 - [x] Runtime API base is configurable
 - [x] Production build succeeds locally
-- [ ] Add `.env.example`
+- [x] Add `.env.example`
 - [x] Set `NUXT_PUBLIC_API_BASE` in Azure Static Web Apps
 - [x] Confirm deployed API URL is correct in production
 
@@ -242,13 +242,12 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 ## 9) Suggested next order of work
 
 ### Immediate
-1. Add `.env.example`.
-2. Write frontend service/store tests.
-3. Build public profile + follow UI.
-4. Build review edit/delete UI.
-5. Add IGDB search/import UI.
-6. Add semantic search UI.
-7. Add feed like/comment UI.
+1. Write frontend service/store tests.
+2. Build public profile + follow UI.
+3. Build review edit/delete UI.
+4. Add IGDB search/import UI.
+5. Add semantic search UI.
+6. Add feed like/comment UI.
 
 ### After that
 1. Add direct-route production verification.
