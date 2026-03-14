@@ -1,5 +1,3 @@
-// /types/admin.ts
-
 export type AdminAssignableRole = 'User' | 'Admin'
 
 export interface AdminUserSummaryDto {
@@ -16,5 +14,9 @@ export interface AdminCreateUserRequestDto {
   displayName: string
   email: string
   password: string
+  role: AdminAssignableRole
+}
+
+export interface AdminUpdateUserRoleRequestDto {
   role: AdminAssignableRole
 }

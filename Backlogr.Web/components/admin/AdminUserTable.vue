@@ -1,4 +1,3 @@
-<!-- /components/admin/AdminUserTable.vue -->
 <script setup lang="ts">
 import type { AdminUserSummaryDto } from '~/types/admin'
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from '~/utils/roles'
@@ -7,9 +6,17 @@ interface Props {
   users: AdminUserSummaryDto[]
   isLoading: boolean
   errorMessage: string
+  canManageRoles: boolean
+  currentUserId: string | null
+  emptyTitle: string
+  emptyMessage: string
 }
 
 const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  editRole: [user: AdminUserSummaryDto]
+}>()
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -40,6 +47,34 @@ function getRoleChipColor(role: string): string {
 
   return 'default'
 }
+
+function canEditRole(user: AdminUserSummaryDto): boolean {
+  if (!props.canManageRoles) {
+    return false
+  }
+
+  if (user.roles.includes(SUPER_ADMIN_ROLE)) {
+    return false
+  }
+
+  return user.userId !== props.currentUserId
+}
+
+function getActionLabel(user: AdminUserSummaryDto): string {
+  if (canEditRole(user)) {
+    return 'Edit role'
+  }
+
+  if (user.userId === props.currentUserId) {
+    return 'Your account'
+  }
+
+  if (user.roles.includes(SUPER_ADMIN_ROLE)) {
+    return 'Protected'
+  }
+
+  return '—'
+}
 </script>
 
 <template>
@@ -68,9 +103,9 @@ function getRoleChipColor(role: string): string {
       rounded="xl"
       flat
     >
-      <div class="text-h6 font-weight-bold mb-2">No users returned yet</div>
+      <div class="text-h6 font-weight-bold mb-2">{{ emptyTitle }}</div>
       <div class="muted">
-        Once the admin user endpoint is available, user records will appear here for quick account management.
+        {{ emptyMessage }}
       </div>
     </v-card>
 
@@ -81,6 +116,7 @@ function getRoleChipColor(role: string): string {
           <th>Email</th>
           <th>Roles</th>
           <th>Created</th>
+          <th v-if="canManageRoles">Actions</th>
         </tr>
       </thead>
 
@@ -105,6 +141,20 @@ function getRoleChipColor(role: string): string {
             </div>
           </td>
           <td>{{ formatDate(user.createdAtUtc) }}</td>
+          <td v-if="canManageRoles">
+            <v-btn
+              v-if="canEditRole(user)"
+              variant="text"
+              size="small"
+              rounded="pill"
+              class="text-none"
+              prepend-icon="mdi-shield-edit-outline"
+              @click="emit('editRole', user)"
+            >
+              Edit role
+            </v-btn>
+            <span v-else class="muted text-body-2">{{ getActionLabel(user) }}</span>
+          </td>
         </tr>
       </tbody>
     </v-table>

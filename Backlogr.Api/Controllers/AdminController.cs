@@ -56,6 +56,41 @@ public sealed class AdminController : ControllerBase
         }
     }
 
+    [HttpPut("users/{userId:guid}/role")]
+    public async Task<ActionResult<AdminUserSummaryDto>> UpdateUserRole(
+        Guid userId,
+        AdminUpdateUserRoleRequestDto dto,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var updatedUser = await _adminService.UpdateUserRoleAsync(currentUserId.Value, userId, dto, cancellationToken);
+            return Ok(updatedUser);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
     private Guid? GetCurrentUserId()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);

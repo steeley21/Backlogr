@@ -1,16 +1,29 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AdminCreateUserDialog from '~/components/admin/AdminCreateUserDialog.vue'
+import AdminEditUserRoleDialog from '~/components/admin/AdminEditUserRoleDialog.vue'
 import AdminUserTable from '~/components/admin/AdminUserTable.vue'
-import { createAdminUser, getAdminUsers } from '~/services/adminService'
+import { createAdminUser, getAdminUsers, updateAdminUserRole } from '~/services/adminService'
 import { useAuthStore } from '~/stores/auth'
-import type { AdminCreateUserRequestDto, AdminUserSummaryDto } from '~/types/admin'
+import type {
+  AdminCreateUserRequestDto,
+  AdminUpdateUserRoleRequestDto,
+  AdminUserSummaryDto,
+} from '~/types/admin'
 import { getApiErrorMessage } from '~/utils/apiError'
-import { isAdminLike, isSuperAdmin } from '~/utils/roles'
+import { ADMIN_ROLE, isAdminLike, isSuperAdmin, SUPER_ADMIN_ROLE, USER_ROLE } from '~/utils/roles'
 
 definePageMeta({
   middleware: 'admin',
 })
+
+type RoleFilter = 'All' | typeof USER_ROLE | typeof ADMIN_ROLE | typeof SUPER_ADMIN_ROLE
+
+authenticateAdminPage()
+
+function authenticateAdminPage(): void {
+  // Keeps page setup logic explicit for readability in this admin view.
+}
 
 const authStore = useAuthStore()
 
@@ -18,9 +31,25 @@ const users = ref<AdminUserSummaryDto[]>([])
 const isLoadingUsers = ref(false)
 const loadErrorMessage = ref('')
 const createErrorMessage = ref('')
-const successMessage = ref('')
+const editErrorMessage = ref('')
 const isCreateDialogOpen = ref(false)
+const isEditDialogOpen = ref(false)
 const isCreatingUser = ref(false)
+const isUpdatingRole = ref(false)
+const selectedUser = ref<AdminUserSummaryDto | null>(null)
+const searchQuery = ref('')
+const selectedRoleFilter = ref<RoleFilter>('All')
+const snackbar = ref({
+  isOpen: false,
+  color: 'success' as 'success' | 'error',
+  message: '',
+})
+
+const roleFilterItems: RoleFilter[] = ['All', USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE]
+
+const currentUserId = computed(() => {
+  return authStore.user?.userId ?? null
+})
 
 const canCreateAdmin = computed(() => {
   return isSuperAdmin(authStore.roles)
@@ -30,9 +59,78 @@ const canViewAdminPage = computed(() => {
   return isAdminLike(authStore.roles)
 })
 
+const canManageRoles = computed(() => {
+  return isSuperAdmin(authStore.roles)
+})
+
+const sortedUsers = computed(() => {
+  return [...users.value].sort((left, right) => {
+    const leftDate = left.createdAtUtc ? Date.parse(left.createdAtUtc) : 0
+    const rightDate = right.createdAtUtc ? Date.parse(right.createdAtUtc) : 0
+
+    if (leftDate !== rightDate) {
+      return rightDate - leftDate
+    }
+
+    return left.displayName.localeCompare(right.displayName)
+  })
+})
+
+const filteredUsers = computed(() => {
+  const normalizedQuery = searchQuery.value.trim().toLowerCase()
+
+  return sortedUsers.value.filter((user) => {
+    const matchesRole = selectedRoleFilter.value === 'All'
+      || user.roles.includes(selectedRoleFilter.value)
+
+    if (!matchesRole) {
+      return false
+    }
+
+    if (!normalizedQuery) {
+      return true
+    }
+
+    return [user.displayName, user.userName, user.email]
+      .some(value => value.toLowerCase().includes(normalizedQuery))
+  })
+})
+
 const adminUserCount = computed(() => {
   return users.value.filter(user => isAdminLike(user.roles)).length
 })
+
+const filteredSummaryText = computed(() => {
+  if (searchQuery.value.trim().length === 0 && selectedRoleFilter.value === 'All') {
+    return `Showing all ${filteredUsers.value.length} users.`
+  }
+
+  return `Showing ${filteredUsers.value.length} of ${users.value.length} users.`
+})
+
+const emptyStateTitle = computed(() => {
+  if (users.value.length === 0) {
+    return 'No users returned yet'
+  }
+
+  return 'No users match those filters'
+})
+
+const emptyStateMessage = computed(() => {
+  if (users.value.length === 0) {
+    return 'User records will appear here for quick account management once the admin users endpoint returns data.'
+  }
+
+  return 'Try clearing the search or switching the role filter to see more accounts.'
+})
+
+function showSnackbar(message: string, color: 'success' | 'error'): void {
+  snackbar.value = {
+    isOpen: true,
+    color,
+    message,
+  }
+}
 
 async function loadUsers(): Promise<void> {
   isLoadingUsers.value = true
@@ -44,6 +142,7 @@ async function loadUsers(): Promise<void> {
   catch (error: unknown) {
     users.value = []
     loadErrorMessage.value = getApiErrorMessage(error, 'Unable to load admin user data right now.')
+    showSnackbar(loadErrorMessage.value, 'error')
   }
   finally {
     isLoadingUsers.value = false
@@ -53,19 +152,49 @@ async function loadUsers(): Promise<void> {
 async function handleCreateUser(payload: AdminCreateUserRequestDto): Promise<void> {
   isCreatingUser.value = true
   createErrorMessage.value = ''
-  successMessage.value = ''
 
   try {
     const createdUser = await createAdminUser(payload)
     isCreateDialogOpen.value = false
-    successMessage.value = `${createdUser.displayName} was created successfully.`
+    showSnackbar(`${createdUser.displayName} was created successfully.`, 'success')
     await loadUsers()
   }
   catch (error: unknown) {
     createErrorMessage.value = getApiErrorMessage(error, 'Unable to create the user right now.')
+    showSnackbar(createErrorMessage.value, 'error')
   }
   finally {
     isCreatingUser.value = false
+  }
+}
+
+function openEditRoleDialog(user: AdminUserSummaryDto): void {
+  selectedUser.value = user
+  editErrorMessage.value = ''
+  isEditDialogOpen.value = true
+}
+
+async function handleUpdateRole(payload: AdminUpdateUserRoleRequestDto): Promise<void> {
+  if (!selectedUser.value) {
+    return
+  }
+
+  isUpdatingRole.value = true
+  editErrorMessage.value = ''
+
+  try {
+    const updatedUser = await updateAdminUserRole(selectedUser.value.userId, payload)
+    isEditDialogOpen.value = false
+    selectedUser.value = null
+    showSnackbar(`${updatedUser.displayName} is now assigned to ${payload.role}.`, 'success')
+    await loadUsers()
+  }
+  catch (error: unknown) {
+    editErrorMessage.value = getApiErrorMessage(error, 'Unable to update the user role right now.')
+    showSnackbar(editErrorMessage.value, 'error')
+  }
+  finally {
+    isUpdatingRole.value = false
   }
 }
 
@@ -81,7 +210,7 @@ onMounted(async () => {
         <div class="overline">ADMIN TOOLS</div>
         <div class="hero-title">Backlogr account management</div>
         <div class="muted hero-subtitle">
-          Use this dashboard to review existing accounts and create new users with the correct starting role.
+          Use this dashboard to review existing accounts, create new users, and manage role assignments.
         </div>
       </div>
 
@@ -109,16 +238,6 @@ onMounted(async () => {
       </div>
     </v-card>
 
-    <v-alert
-      v-if="successMessage"
-      type="success"
-      variant="tonal"
-      rounded="lg"
-      class="mt-4"
-    >
-      {{ successMessage }}
-    </v-alert>
-
     <v-row class="mt-2" dense>
       <v-col cols="12" md="4">
         <v-card class="summary-card" rounded="xl" flat>
@@ -126,7 +245,7 @@ onMounted(async () => {
           <div class="summary-value">{{ canCreateAdmin ? 'SuperAdmin' : 'Admin' }}</div>
           <div class="muted summary-copy">
             {{ canCreateAdmin
-              ? 'You can create both User and Admin accounts.'
+              ? 'You can create both User and Admin accounts, and edit existing User/Admin roles.'
               : 'You can create standard User accounts.' }}
           </div>
         </v-card>
@@ -137,7 +256,7 @@ onMounted(async () => {
           <div class="summary-label">Users returned</div>
           <div class="summary-value">{{ users.length }}</div>
           <div class="muted summary-copy">
-            This count comes from the admin users endpoint once it is available.
+            This count comes from the live admin users endpoint.
           </div>
         </v-card>
       </v-col>
@@ -158,15 +277,49 @@ onMounted(async () => {
         <div>
           <div class="section-title">Users</div>
           <div class="muted section-copy">
-            Review current accounts and verify role assignments before handing out elevated access.
+            Review current accounts and manage elevated access with care.
           </div>
         </div>
       </div>
 
+      <div class="filters-grid mt-4">
+        <v-text-field
+          v-model="searchQuery"
+          label="Search users"
+          placeholder="Find by display name, username, or email"
+          variant="solo-filled"
+          rounded="xl"
+          hide-details="auto"
+          prepend-inner-icon="mdi-magnify"
+          clearable
+        />
+
+        <v-select
+          v-model="selectedRoleFilter"
+          :items="roleFilterItems"
+          label="Role filter"
+          variant="solo-filled"
+          rounded="xl"
+          hide-details="auto"
+        />
+      </div>
+
+      <div class="table-meta mt-3 mb-2">
+        <div class="muted">{{ filteredSummaryText }}</div>
+        <div class="muted permission-note">
+          SuperAdmin can edit User/Admin roles. SuperAdmin accounts and your own account stay protected.
+        </div>
+      </div>
+
       <AdminUserTable
-        :users="users"
+        :users="filteredUsers"
         :is-loading="isLoadingUsers"
         :error-message="loadErrorMessage"
+        :can-manage-roles="canManageRoles"
+        :current-user-id="currentUserId"
+        :empty-title="emptyStateTitle"
+        :empty-message="emptyStateMessage"
+        @edit-role="openEditRoleDialog"
       />
     </v-card>
 
@@ -177,18 +330,40 @@ onMounted(async () => {
       :error-message="createErrorMessage"
       @submit="handleCreateUser"
     />
+
+    <AdminEditUserRoleDialog
+      v-model="isEditDialogOpen"
+      :user="selectedUser"
+      :is-submitting="isUpdatingRole"
+      :error-message="editErrorMessage"
+      @submit="handleUpdateRole"
+    />
+
+    <v-snackbar
+      v-model="snackbar.isOpen"
+      :color="snackbar.color"
+      rounded="pill"
+      location="bottom right"
+      timeout="3200"
+    >
+      {{ snackbar.message }}
+    </v-snackbar>
   </div>
 </template>
 
 <style scoped>
 .admin-page {
-  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .hero,
 .summary-card,
 .section-card {
-  background: color-mix(in srgb, var(--card) 90%, black);
+  background:
+    radial-gradient(circle at top left, rgba(142, 189, 255, 0.14), transparent 30%),
+    color-mix(in srgb, var(--card) 92%, black);
   border: 1px solid var(--border);
 }
 
@@ -196,73 +371,61 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
   padding: 28px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .hero-copy {
-  max-width: 640px;
+  max-width: 720px;
 }
 
 .overline {
   color: var(--primary);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  font-size: 0.75rem;
-}
-
-.hero-title,
-.section-title,
-.summary-value {
-  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin-bottom: 10px;
 }
 
 .hero-title {
-  margin-top: 10px;
-  font-size: 2rem;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
   font-weight: 800;
-}
-
-.hero-subtitle,
-.muted,
-.summary-label {
-  color: var(--muted-foreground);
+  line-height: 1.1;
 }
 
 .hero-subtitle {
-  margin-top: 10px;
-  line-height: 1.6;
+  margin-top: 12px;
+  max-width: 60ch;
 }
 
 .hero-actions {
   display: flex;
-  align-items: center;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
 .summary-card {
-  height: 100%;
   padding: 20px;
+  height: 100%;
 }
 
 .summary-label {
-  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .summary-value {
-  margin-top: 10px;
-  font-size: 1.8rem;
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
   font-weight: 800;
+  margin-top: 10px;
 }
 
 .summary-copy {
   margin-top: 10px;
-  line-height: 1.55;
 }
 
 .section-card {
@@ -271,14 +434,13 @@ onMounted(async () => {
 
 .section-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
 }
 
 .section-title {
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
@@ -286,10 +448,45 @@ onMounted(async () => {
   margin-top: 6px;
 }
 
-@media (max-width: 900px) {
+.filters-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 320px);
+}
+
+.table-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.permission-note {
+  text-align: right;
+}
+
+.muted {
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 960px) {
   .hero {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-note {
+    text-align: left;
   }
 }
 </style>

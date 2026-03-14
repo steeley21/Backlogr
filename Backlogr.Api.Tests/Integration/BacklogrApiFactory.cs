@@ -1,4 +1,6 @@
-﻿using Backlogr.Api.Data;
+using Backlogr.Api.Data;
+using Backlogr.Api.Services.Implementations;
+using Backlogr.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +26,11 @@ public class BacklogrApiFactory : WebApplicationFactory<Program>
                 ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\MSSQLLocalDB;Database=BacklogrTestDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True",
                 ["Jwt:Key"] = "Backlogr-Test-Jwt-Key-This-Is-Long-Enough-For-HS256-12345",
                 ["Jwt:Issuer"] = "Backlogr.Api.Tests",
-                ["Jwt:Audience"] = "Backlogr.Api.Tests.Client"
+                ["Jwt:Audience"] = "Backlogr.Api.Tests.Client",
+                ["Igdb:ClientId"] = "test-client-id",
+                ["Igdb:ClientSecret"] = "test-client-secret",
+                ["Igdb:ApiBaseUrl"] = "https://example.test",
+                ["Cors:AllowedOrigins:0"] = "http://localhost"
             };
 
             configBuilder.AddInMemoryCollection(testConfig);
@@ -35,11 +41,14 @@ public class BacklogrApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.RemoveAll<ApplicationDbContext>();
+            services.RemoveAll<IIgdbService>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseInMemoryDatabase(_databaseName);
             });
+
+            services.AddScoped<IIgdbService, StubIgdbService>();
         });
     }
 }

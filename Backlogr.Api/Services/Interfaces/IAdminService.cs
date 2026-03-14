@@ -10,4 +10,10 @@ public interface IAdminService
         Guid currentUserId,
         AdminCreateUserRequestDto dto,
         CancellationToken cancellationToken = default);
+
+    Task<AdminUserSummaryDto> UpdateUserRoleAsync(
+        Guid currentUserId,
+        Guid targetUserId,
+        AdminUpdateUserRoleRequestDto dto,
+        CancellationToken cancellationToken = default);
 }

@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { AdminAssignableRole, AdminCreateUserRequestDto } from '~/types/admin'
-import { USER_ROLE, ADMIN_ROLE } from '~/utils/roles'
+import { ADMIN_ROLE, USER_ROLE } from '~/utils/roles'
 
 interface Props {
   modelValue: boolean
@@ -37,16 +37,81 @@ const availableRoles = computed(() => {
   return roles
 })
 
+const normalizedEmail = computed(() => form.value.email.trim())
+const trimmedUserName = computed(() => form.value.userName.trim())
+const trimmedDisplayName = computed(() => form.value.displayName.trim())
+
+const usernameErrorMessages = computed(() => {
+  if (trimmedUserName.value.length === 0) {
+    return []
+  }
+
+  const messages: string[] = []
+
+  if (trimmedUserName.value.length < 3) {
+    messages.push('Username must be at least 3 characters.')
+  }
+
+  if (!/^[A-Za-z0-9_.-]+$/.test(trimmedUserName.value)) {
+    messages.push('Use letters, numbers, dots, dashes, or underscores only.')
+  }
+
+  return messages
+})
+
+const displayNameErrorMessages = computed(() => {
+  if (trimmedDisplayName.value.length === 0) {
+    return []
+  }
+
+  return trimmedDisplayName.value.length >= 2
+    ? []
+    : ['Display name must be at least 2 characters.']
+})
+
+const emailErrorMessages = computed(() => {
+  if (normalizedEmail.value.length === 0) {
+    return []
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail.value)
+    ? []
+    : ['Enter a valid email address.']
+})
+
+const passwordErrorMessages = computed(() => {
+  if (form.value.password.length === 0) {
+    return []
+  }
+
+  return form.value.password.length >= 8
+    ? []
+    : ['Password must be at least 8 characters.']
+})
+
 const passwordsMatch = computed(() => {
   return form.value.password === confirmPassword.value
 })
 
+const confirmPasswordErrorMessages = computed(() => {
+  if (confirmPassword.value.length === 0) {
+    return []
+  }
+
+  return passwordsMatch.value ? [] : ['Passwords do not match.']
+})
+
 const isFormValid = computed(() => {
-  return form.value.userName.trim().length > 0
-    && form.value.displayName.trim().length > 0
-    && form.value.email.trim().length > 0
+  return trimmedUserName.value.length > 0
+    && trimmedDisplayName.value.length > 0
+    && normalizedEmail.value.length > 0
     && form.value.password.trim().length > 0
     && confirmPassword.value.trim().length > 0
+    && usernameErrorMessages.value.length === 0
+    && displayNameErrorMessages.value.length === 0
+    && emailErrorMessages.value.length === 0
+    && passwordErrorMessages.value.length === 0
+    && confirmPasswordErrorMessages.value.length === 0
     && passwordsMatch.value
 })
 
@@ -68,6 +133,10 @@ function resetForm(): void {
 }
 
 function closeDialog(): void {
+  if (props.isSubmitting) {
+    return
+  }
+
   emit('update:modelValue', false)
 }
 
@@ -77,9 +146,9 @@ function submit(): void {
   }
 
   emit('submit', {
-    userName: form.value.userName.trim(),
-    displayName: form.value.displayName.trim(),
-    email: form.value.email.trim(),
+    userName: trimmedUserName.value,
+    displayName: trimmedDisplayName.value,
+    email: normalizedEmail.value,
     password: form.value.password,
     role: form.value.role,
   })
@@ -101,7 +170,7 @@ function submit(): void {
           </div>
         </div>
 
-        <v-btn icon="mdi-close" variant="text" @click="closeDialog" />
+        <v-btn icon="mdi-close" variant="text" :disabled="isSubmitting" @click="closeDialog" />
       </div>
 
       <v-alert
@@ -114,6 +183,12 @@ function submit(): void {
         {{ errorMessage }}
       </v-alert>
 
+      <v-alert type="info" variant="tonal" rounded="lg" class="mb-4">
+        {{ canCreateAdmin
+          ? 'SuperAdmin can create both User and Admin accounts.'
+          : 'Admin accounts can only create standard User accounts.' }}
+      </v-alert>
+
       <v-form @submit.prevent="submit">
         <v-row>
           <v-col cols="12" md="6">
@@ -124,6 +199,8 @@ function submit(): void {
               rounded="xl"
               hide-details="auto"
               autocomplete="username"
+              :readonly="isSubmitting"
+              :error-messages="usernameErrorMessages"
             />
           </v-col>
 
@@ -135,6 +212,8 @@ function submit(): void {
               rounded="xl"
               hide-details="auto"
               autocomplete="name"
+              :readonly="isSubmitting"
+              :error-messages="displayNameErrorMessages"
             />
           </v-col>
 
@@ -147,6 +226,8 @@ function submit(): void {
               rounded="xl"
               hide-details="auto"
               autocomplete="email"
+              :readonly="isSubmitting"
+              :error-messages="emailErrorMessages"
             />
           </v-col>
 
@@ -159,6 +240,8 @@ function submit(): void {
               rounded="xl"
               hide-details="auto"
               autocomplete="new-password"
+              :readonly="isSubmitting"
+              :error-messages="passwordErrorMessages"
             />
           </v-col>
 
@@ -171,8 +254,8 @@ function submit(): void {
               rounded="xl"
               hide-details="auto"
               autocomplete="new-password"
-              :error="confirmPassword.length > 0 && !passwordsMatch"
-              :error-messages="confirmPassword.length > 0 && !passwordsMatch ? ['Passwords do not match.'] : []"
+              :readonly="isSubmitting"
+              :error-messages="confirmPasswordErrorMessages"
             />
           </v-col>
 
@@ -184,6 +267,7 @@ function submit(): void {
               variant="solo-filled"
               rounded="xl"
               hide-details="auto"
+              :disabled="isSubmitting"
             />
           </v-col>
         </v-row>
@@ -193,6 +277,7 @@ function submit(): void {
             variant="text"
             rounded="pill"
             class="text-none"
+            :disabled="isSubmitting"
             @click="closeDialog"
           >
             Cancel
@@ -203,7 +288,7 @@ function submit(): void {
             rounded="pill"
             class="text-none px-6"
             :loading="isSubmitting"
-            :disabled="!isFormValid"
+            :disabled="!isFormValid || isSubmitting"
             type="submit"
           >
             Create user

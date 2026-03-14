@@ -1,8 +1,11 @@
-﻿using Backlogr.Api.Data;
+using Backlogr.Api.Data;
+using Backlogr.Api.DTOs.Igdb;
 using Backlogr.Api.Models.Entities;
 using Backlogr.Api.Services.Implementations;
+using Backlogr.Api.Services.Interfaces;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace Backlogr.Api.Tests.Services;
 
@@ -19,7 +22,7 @@ public sealed class GameServiceTests
 
         await dbContext.SaveChangesAsync();
 
-        var service = new GameService(dbContext);
+        var service = new GameService(dbContext, CreateIgdbServiceMock().Object);
 
         var result = await service.SearchGamesAsync(null, take: 10);
 
@@ -39,11 +42,43 @@ public sealed class GameServiceTests
 
         await dbContext.SaveChangesAsync();
 
-        var service = new GameService(dbContext);
+        var service = new GameService(dbContext, CreateIgdbServiceMock().Object);
 
         var result = await service.SearchGamesAsync("Roguelike", take: 10);
 
         result.Should().ContainSingle();
+        result[0].Title.Should().Be("Hades");
+    }
+
+    [Fact]
+    public async Task SearchBrowseGamesAsync_ShouldMergeLocalAndIgdbResults_WhenLocalResultsAreBelowTakeLimit()
+    {
+        var dbContext = CreateDbContext();
+
+        dbContext.Games.Add(CreateGame("Hollow Knight", "Metroidvania", "PC"));
+        await dbContext.SaveChangesAsync();
+
+        var igdbServiceMock = CreateIgdbServiceMock();
+        igdbServiceMock
+            .Setup(service => service.SearchGamesAsync("Hades", 5))
+            .ReturnsAsync(new List<IgdbGameSearchResultDto>
+            {
+                new()
+                {
+                    IgdbId = 1003,
+                    Title = "Hades",
+                    Platforms = "PC, Switch",
+                    Genres = "Roguelike, Action"
+                }
+            });
+
+        var service = new GameService(dbContext, igdbServiceMock.Object);
+
+        var result = await service.SearchBrowseGamesAsync("Hades", take: 5);
+
+        result.Should().ContainSingle();
+        result[0].GameId.Should().BeNull();
+        result[0].IgdbId.Should().Be(1003);
         result[0].Title.Should().Be("Hades");
     }
 
@@ -61,7 +96,7 @@ public sealed class GameServiceTests
         dbContext.Games.Add(game);
         await dbContext.SaveChangesAsync();
 
-        var service = new GameService(dbContext);
+        var service = new GameService(dbContext, CreateIgdbServiceMock().Object);
 
         var result = await service.GetGameByIdAsync(game.GameId);
 
@@ -77,11 +112,19 @@ public sealed class GameServiceTests
     {
         var dbContext = CreateDbContext();
 
-        var service = new GameService(dbContext);
+        var service = new GameService(dbContext, CreateIgdbServiceMock().Object);
 
         var result = await service.GetGameByIdAsync(Guid.NewGuid());
 
         result.Should().BeNull();
+    }
+
+    private static Mock<IIgdbService> CreateIgdbServiceMock()
+    {
+        var mock = new Mock<IIgdbService>();
+        mock.Setup(service => service.SearchGamesAsync(It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(new List<IgdbGameSearchResultDto>());
+        return mock;
     }
 
     private static ApplicationDbContext CreateDbContext()

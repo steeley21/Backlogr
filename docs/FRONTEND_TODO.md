@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-14
 
-This checklist reflects the current integrated frontend state after deployment and the new merged browse/IGDB flow.
+This checklist reflects the current integrated frontend state after deployment plus the newly added landing-page and admin user-management work.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -26,6 +26,15 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Frontend can reach deployed API successfully
 - [x] Browse is backed by the live merged catalog/search flow
 
+### Confirmed current local behavior
+- [x] Public landing page is implemented at `/`
+- [x] Authenticated home/feed route is split to `/feed`
+- [x] Admin route exists and is role-gated
+- [x] Admin dashboard user list works
+- [x] Admin create-user flow works
+- [x] SuperAdmin role-edit flow works
+- [x] Admin dashboard search/filter/feedback polish pass is in place
+
 ### Current known limitations
 - [ ] Public profile pages are not built yet
 - [ ] Follow/unfollow UI is not built yet
@@ -33,7 +42,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Feed like/comment UI is not built yet
 - [ ] Semantic search UI is not built yet
 - [ ] Frontend tests are not written yet
-- [ ] Dedicated admin/import management UI is not built
+- [ ] Admin review moderation is not built
+- [ ] Dedicated import-management UI is not built
 
 ---
 
@@ -52,6 +62,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Library types
 - [x] Review types
 - [x] AI types
+- [x] Admin types
 - [ ] Consider a future cleanup pass to organize DTOs into a dedicated `types/api/` or `types/dtos/` structure
 
 ### State management (Pinia)
@@ -60,10 +71,13 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] `feedStore` *(page still loads directly from service)*
 - [ ] `libraryStore`
 - [ ] `profileStore`
+- [ ] `adminStore` *(not necessary yet, but could be added later if admin UI expands)*
 
 ### Route protection
 - [x] Global auth middleware added
+- [x] Public-route exceptions for `/`, `/login`, `/register`
 - [x] Core app routes gated behind auth
+- [x] Admin route gated behind `Admin` / `SuperAdmin`
 
 ---
 
@@ -74,19 +88,27 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Shared API client created
 - [x] Bearer token request interceptor
 - [x] 401 handling / redirect to login
-- [ ] Extract reusable shared `getApiErrorMessage()` helper if we want less repeated page logic
+- [x] Shared `getApiErrorMessage()` helper extracted
 
 ### Auth service + UI
 - [x] `authService.ts`
 - [x] Login page
 - [x] Register page
 - [x] Auth store rehydration
-- [x] AppTopBar login/logout state
+- [x] AppTopBar public/authenticated/admin states
 - [x] Profile/avatar only shown when authenticated
+- [x] Auth redirect flow now lands on `/feed`
 
 ---
 
 ## 3) Page/API wiring status
+
+### Landing / navigation
+- [x] Public landing page at `/`
+- [x] Marketing/intro content added for the site
+- [x] Route split so authenticated feed is `/feed`
+- [x] Top-bar behavior updated for public vs authenticated routes
+- [ ] Continue content/design polish on landing page if needed for final presentation
 
 ### Feed
 - [x] Replace mock feed data with live API call
@@ -142,6 +164,19 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Social stats / follow counts
 - [ ] Editable profile fields
 
+### Admin
+- [x] Admin dashboard page
+- [x] Admin-only navigation visibility
+- [x] User list wiring
+- [x] Create-user dialog
+- [x] SuperAdmin-only role edit dialog
+- [x] Search/filter UI
+- [x] Success/error snackbar feedback
+- [x] Safer disabled/loading states on admin actions
+- [ ] Admin pagination if user count grows
+- [ ] Admin table sort controls
+- [ ] Admin review moderation UI
+
 ---
 
 ## 4) Social features still needed
@@ -178,15 +213,16 @@ Current search decisions:
 ### Remaining frontend tasks
 - [ ] Add semantic search UI for `GET /api/ai/semantic-search`
 - [ ] Add optional browse/result polish for larger catalogs
-- [ ] Decide whether any explicit “import management” UI is needed for admin/demo purposes
+- [ ] Decide whether any explicit import-management UI is needed for admin/demo purposes
 
 ---
 
 ## 6) Error handling / polish pass
 
 - [x] Basic loading/empty/error states are present on core wired pages
-- [ ] Centralize shared API error formatting
-- [ ] Add toast/snackbar pattern for success + failure feedback
+- [x] Shared API error formatting helper exists
+- [x] Snackbar feedback pattern exists on admin flows
+- [ ] Expand snackbar/feedback pattern across non-admin pages
 - [ ] Tighten form validation / messaging on log + auth pages
 - [ ] Accessibility pass (labels, keyboard flow, aria polish)
 - [ ] Mobile UX pass after deployment verification
@@ -204,16 +240,20 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [ ] `libraryService`
 - [ ] `reviewService`
 - [ ] `aiService`
+- [ ] `adminService`
 
 ### Store tests
 - [ ] `authStore` token persistence + logout clears
+- [ ] role helper coverage for `Admin` / `SuperAdmin`
 
 ### Component / page smoke tests
 - [ ] Auth pages
+- [ ] Landing page render
 - [ ] Feed render
 - [ ] Browse click/import flow
 - [ ] Log form validation
 - [ ] Recommend page render
+- [ ] Admin page render + role-gated actions
 
 ---
 
@@ -230,8 +270,10 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [x] Confirm CORS works with deployed frontend domain
 - [x] Test login/register against deployed API
 - [x] Test browse/game detail/library/feed against deployed API at the current MVP level
+- [ ] Re-test landing page + `/feed` split after next frontend deployment
+- [ ] Re-test admin dashboard after next frontend/backend deployment
 - [ ] Test AI recommendation + review assistant stubs against deployed API
-- [ ] Verify direct route loads in production (`/game/:id`, `/profile`, `/recommend`, etc.)
+- [ ] Verify direct route loads in production (`/game/:id`, `/profile`, `/recommend`, `/admin`, etc.)
 
 ### CI expectations
 - [ ] `npm ci`
@@ -243,17 +285,17 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 ## 9) Suggested next order of work
 
 ### Immediate
-1. Write frontend service/store tests.
+1. Write frontend tests for auth/admin/core services.
 2. Build public profile + follow UI.
 3. Build review edit/delete UI.
 4. Add semantic search UI.
 5. Add feed like/comment UI.
-6. Tighten shared API error handling and feedback.
+6. Expand the feedback/error-handling pattern beyond the admin page.
 
 ### After that
-1. Add direct-route production verification.
+1. Re-verify direct-route production loads.
 2. Do a final accessibility/mobile polish pass.
-3. Decide whether any admin/demo-only catalog tooling is still worth adding.
+3. Decide whether any import-management or demo-only admin tooling is still worth adding.
 
 ---
 

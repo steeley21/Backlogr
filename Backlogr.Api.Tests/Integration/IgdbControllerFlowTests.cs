@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Backlogr.Api.Common;
 using Backlogr.Api.DTOs.Igdb;
@@ -31,7 +31,8 @@ public sealed class IgdbControllerFlowTests : IClassFixture<AuthenticatedBacklog
             userId,
             "igdb_search_user",
             "igdb_search_user@example.com",
-            "IGDB Search User");
+            "IGDB Search User",
+            RoleNames.User);
 
         var response = await client.GetAsync("/api/igdb/search?query=hades");
 
@@ -43,7 +44,7 @@ public sealed class IgdbControllerFlowTests : IClassFixture<AuthenticatedBacklog
     }
 
     [Fact]
-    public async Task ImportGame_ShouldReturnForbidden_ForNonAdminUser()
+    public async Task ImportGame_ShouldImportOrUpdateGame_ForAuthenticatedUser()
     {
         using var client = _factory.CreateClient();
 
@@ -53,48 +54,50 @@ public sealed class IgdbControllerFlowTests : IClassFixture<AuthenticatedBacklog
 
         await SeedUserAsync(
             userId,
-            "igdb_non_admin",
-            "igdb_non_admin@example.com",
-            "IGDB Non Admin");
+            "igdb_import_user",
+            "igdb_import_user@example.com",
+            "IGDB Import User",
+            RoleNames.User);
 
         var response = await client.PostAsync("/api/igdb/import/1001", null);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task ImportGame_ShouldImportOrUpdateGame_ForAdminUser()
-    {
-        using var client = _factory.CreateClient();
-
-        var adminUserId = Guid.Parse("14141414-1414-1414-1414-141414141414");
-        client.DefaultRequestHeaders.Add("X-Test-UserId", adminUserId.ToString());
-        client.DefaultRequestHeaders.Add("X-Test-Roles", "Admin");
-
-        await SeedUserAsync(
-            adminUserId,
-            "igdb_admin_user",
-            "igdb_admin_user@example.com",
-            "IGDB Admin User");
-
-        var response = await client.PostAsync("/api/igdb/import/1002", null);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var imported = await response.Content.ReadFromJsonAsync<ImportedGameResponseDto>();
         imported.Should().NotBeNull();
-        imported!.IgdbId.Should().Be(1002);
-        imported.Title.Should().Be("Stardew Valley");
+        imported!.IgdbId.Should().Be(1001);
+        imported.Title.Should().Be("Hollow Knight");
     }
 
-    private async Task SeedUserAsync(Guid userId, string userName, string email, string displayName)
+    [Fact]
+    public async Task ImportGame_ShouldReturnNotFound_WhenIgdbIdDoesNotExist()
+    {
+        using var client = _factory.CreateClient();
+
+        var userId = Guid.Parse("14141414-1414-1414-1414-141414141414");
+        client.DefaultRequestHeaders.Add("X-Test-UserId", userId.ToString());
+        client.DefaultRequestHeaders.Add("X-Test-Roles", "User");
+
+        await SeedUserAsync(
+            userId,
+            "igdb_missing_user",
+            "igdb_missing_user@example.com",
+            "IGDB Missing User",
+            RoleNames.User);
+
+        var response = await client.PostAsync("/api/igdb/import/999999", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private async Task SeedUserAsync(Guid userId, string userName, string email, string displayName, params string[] roles)
     {
         using var scope = _factory.Services.CreateScope();
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
-        foreach (var roleName in new[] { RoleNames.User, RoleNames.Admin })
+        foreach (var roleName in roles.Distinct())
         {
             if (!await roleManager.RoleExistsAsync(roleName))
             {
@@ -108,21 +111,29 @@ public sealed class IgdbControllerFlowTests : IClassFixture<AuthenticatedBacklog
         }
 
         var existingUser = await userManager.FindByIdAsync(userId.ToString());
-        if (existingUser is not null)
+        if (existingUser is null)
         {
-            return;
+            var user = new ApplicationUser
+            {
+                Id = userId,
+                UserName = userName,
+                Email = email,
+                DisplayName = displayName,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var createUserResult = await userManager.CreateAsync(user, "Password1");
+            createUserResult.Succeeded.Should().BeTrue();
+            existingUser = user;
         }
 
-        var user = new ApplicationUser
+        foreach (var role in roles)
         {
-            Id = userId,
-            UserName = userName,
-            Email = email,
-            DisplayName = displayName,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var createUserResult = await userManager.CreateAsync(user, "Password1");
-        createUserResult.Succeeded.Should().BeTrue();
+            if (!await userManager.IsInRoleAsync(existingUser, role))
+            {
+                var addToRoleResult = await userManager.AddToRoleAsync(existingUser, role);
+                addToRoleResult.Succeeded.Should().BeTrue();
+            }
+        }
     }
 }
