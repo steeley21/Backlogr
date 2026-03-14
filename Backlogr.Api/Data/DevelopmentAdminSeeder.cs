@@ -70,5 +70,16 @@ public static class DevelopmentAdminSeeder
                 throw new InvalidOperationException($"Failed to add development admin to Admin role. Errors: {errors}");
             }
         }
+
+        if (!await userManager.IsInRoleAsync(existingUser, RoleNames.SuperAdmin))
+        {
+            var superAdminRoleResult = await userManager.AddToRoleAsync(existingUser, RoleNames.SuperAdmin);
+
+            if (!superAdminRoleResult.Succeeded)
+            {
+                var errors = string.Join("; ", superAdminRoleResult.Errors.Select(error => error.Description));
+                throw new InvalidOperationException($"Failed to add development admin to SuperAdmin role. Errors: {errors}");
+            }
+        }
     }
 }

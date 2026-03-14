@@ -124,13 +124,7 @@ builder.Services.AddAuthorization();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ??
-    [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://localhost:3000",
-        "https://localhost:3001"
-    ];
+    .Get<string[]>() ?? ["http://localhost:3000"];
 
 builder.Services.AddCors(options =>
 {
@@ -150,6 +144,7 @@ builder.Services.AddScoped<IReviewInteractionService, ReviewInteractionService>(
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.Services.AddHttpClient<ITwitchTokenService, TwitchTokenService>(httpClient =>
 {
