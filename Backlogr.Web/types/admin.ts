@@ -1,4 +1,4 @@
-export type AdminAssignableRole = 'User' | 'Admin'
+export type AdminAssignableRole = 'User' | 'Admin' | 'SuperAdmin'
 
 export interface AdminUserSummaryDto {
   userId: string

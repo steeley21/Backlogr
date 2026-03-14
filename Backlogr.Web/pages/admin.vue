@@ -245,7 +245,7 @@ onMounted(async () => {
           <div class="summary-value">{{ canCreateAdmin ? 'SuperAdmin' : 'Admin' }}</div>
           <div class="muted summary-copy">
             {{ canCreateAdmin
-              ? 'You can create both User and Admin accounts, and edit existing User/Admin roles.'
+              ? 'You can create User and Admin accounts, promote existing users up to SuperAdmin, and manage elevated roles.'
               : 'You can create standard User accounts.' }}
           </div>
         </v-card>
@@ -307,7 +307,7 @@ onMounted(async () => {
       <div class="table-meta mt-3 mb-2">
         <div class="muted">{{ filteredSummaryText }}</div>
         <div class="muted permission-note">
-          SuperAdmin can edit User/Admin roles. SuperAdmin accounts and your own account stay protected.
+          SuperAdmin can edit User, Admin, and SuperAdmin roles. SuperAdmin accounts and your own account stay protected.
         </div>
       </div>
 
@@ -336,6 +336,7 @@ onMounted(async () => {
       :user="selectedUser"
       :is-submitting="isUpdatingRole"
       :error-message="editErrorMessage"
+      :can-manage-super-admins="canManageRoles"
       @submit="handleUpdateRole"
     />
 

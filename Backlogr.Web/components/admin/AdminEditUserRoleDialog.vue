@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { AdminAssignableRole, AdminUpdateUserRoleRequestDto, AdminUserSummaryDto } from '~/types/admin'
-import { ADMIN_ROLE, USER_ROLE } from '~/utils/roles'
+import { ADMIN_ROLE, SUPER_ADMIN_ROLE, USER_ROLE } from '~/utils/roles'
 
 interface Props {
   modelValue: boolean
   user: AdminUserSummaryDto | null
   isSubmitting: boolean
   errorMessage: string
+  canManageSuperAdmins: boolean
 }
 
 const props = defineProps<Props>()
@@ -20,9 +21,19 @@ const emit = defineEmits<{
 const selectedRole = ref<AdminAssignableRole>(USER_ROLE)
 const confirmRoleChange = ref(false)
 
-const availableRoles: AdminAssignableRole[] = [USER_ROLE, ADMIN_ROLE]
+const availableRoles = computed<AdminAssignableRole[]>(() => {
+  if (props.canManageSuperAdmins) {
+    return [USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE]
+  }
+
+  return [USER_ROLE, ADMIN_ROLE]
+})
 
 const currentAssignableRole = computed<AdminAssignableRole>(() => {
+  if (props.user?.roles.includes(SUPER_ADMIN_ROLE)) {
+    return SUPER_ADMIN_ROLE
+  }
+
   if (props.user?.roles.includes(ADMIN_ROLE)) {
     return ADMIN_ROLE
   }
