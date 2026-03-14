@@ -6,7 +6,7 @@ ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app 
 
 ## Current Status
 
-The backend is now **deployed and working in Azure** and is serving the current `Backlogr.Web` frontend.
+The backend is deployed and working in Azure for the current MVP feature set, and the current local codebase now also includes admin user-management endpoints plus `SuperAdmin` support that have been verified locally with passing automated tests.
 
 **Production API URL:** `https://backlograpi.azurewebsites.net`
 
@@ -15,7 +15,7 @@ Implemented so far:
 - Entity Framework Core + SQL Server for deployed environments and **LocalDB** for local development
 - ASP.NET Core Identity with **Guid** keys
 - JWT authentication
-- Role seeding for `User` and `Admin`
+- Role seeding for `User`, `Admin`, and `SuperAdmin`
 - Swagger/OpenAPI with bearer auth support
 - CORS configured for local frontend development and deployed frontend access
 - GitHub Actions CI/CD for API deployment
@@ -46,26 +46,41 @@ Implemented so far:
   - `POST /api/follows/{userId}`
   - `DELETE /api/follows/{userId}`
   - `GET /api/feed`
+- Admin user-management endpoints:
+  - `GET /api/admin/users`
+  - `POST /api/admin/users`
+  - `PUT /api/admin/users/{userId}/role`
 - AI stub endpoints:
   - `POST /api/ai/recommendations`
   - `POST /api/ai/review-assistant`
   - `GET /api/ai/semantic-search`
-- Automated tests covering services, protected routes, and authenticated endpoint flows across implemented slices
+- Automated tests covering services, protected routes, authenticated endpoint flows, and admin permission rules across implemented slices
 
 ### Current deployed behavior
 - Swagger is available for the deployed API.
 - Register, login, library, and feed flows are working in the deployed environment at the same level they were working in development.
 - Feed includes the **current user’s own activity** in addition to activity from followed users.
 - `GameLog.Rating` remains the source of truth for ratings.
-- IGDB search and import are now working against the real IGDB API in both local development and production.
-- Browse/search can now use the local catalog first and pull in IGDB-backed results through the backend search flow.
+- IGDB search and import are working against the real IGDB API in both local development and production.
+- Browse/search can use the local catalog first and pull in IGDB-backed results through the backend search flow.
 - AI surfaces are still stub-backed for now.
+
+### Current locally verified behavior
+- `SuperAdmin` role seeding works in development.
+- Admin user-management endpoints are working locally.
+- `Admin` can create `User` accounts.
+- `SuperAdmin` can create `User` and `Admin` accounts.
+- `SuperAdmin` can change existing `User` / `Admin` roles.
+- Self-role editing is intentionally blocked.
+- `SuperAdmin` role editing through the admin endpoint is intentionally blocked.
+- Automated tests for the admin endpoints and `SuperAdmin` permission paths are passing locally.
 
 Not implemented yet:
 - Real Azure AI / Azure AI Search integration
 - Production-grade global exception handling middleware
 - Structured logging / production diagnostics hardening
 - Production/admin bootstrap strategy beyond current development seeding
+- Admin review moderation endpoints/UI
 
 ---
 
@@ -88,6 +103,7 @@ Not implemented yet:
 Backlogr.Api/
 ├── Common/
 ├── Controllers/
+│   ├── AdminController.cs
 │   ├── AiController.cs
 │   ├── AuthController.cs
 │   ├── CommentsController.cs
@@ -103,6 +119,7 @@ Backlogr.Api/
 │   ├── DevelopmentDataSeeder.cs
 │   └── IdentityDataSeeder.cs
 ├── DTOs/
+│   ├── Admin/
 │   ├── AI/
 │   ├── Auth/
 │   ├── Feed/
@@ -132,6 +149,7 @@ Backlogr.Api/
 ### Identity
 - `ApplicationUser`
 - `ApplicationRole`
+- role names currently include `User`, `Admin`, and `SuperAdmin`
 
 ### Catalog
 - `Game`
@@ -216,6 +234,16 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 - no self-follow
 - duplicate follow is treated as a no-op
 - unfollow missing relationship is treated as a no-op
+
+### Admin user-management rules
+- `GET /api/admin/users` requires `Admin` or `SuperAdmin`
+- `POST /api/admin/users` requires `Admin` or `SuperAdmin`
+- `PUT /api/admin/users/{userId}/role` requires `SuperAdmin`
+- `Admin` can create `User`
+- `SuperAdmin` can create `User` and `Admin`
+- the role-edit endpoint only supports changing between `User` and `Admin`
+- self-role editing is blocked
+- editing a `SuperAdmin` account through the admin endpoint is blocked
 
 ---
 
@@ -319,7 +347,7 @@ Do **not** prefix it with `Bearer` in the Swagger auth dialog.
 ## Development Seed Behavior
 
 In development, startup currently seeds:
-- roles: `User`, `Admin`
+- roles: `User`, `Admin`, `SuperAdmin`
 - one temporary test game for local development/testing
 - an optional development admin account when `SeedAdmin` values are present in user secrets
 
@@ -328,6 +356,10 @@ Current seeded test game id:
 ```text
 11111111-1111-1111-1111-111111111111
 ```
+
+Current local development expectation:
+- the seeded development admin can be elevated to `SuperAdmin` for local admin testing
+- this is intended for development/demo use and is not a production bootstrap strategy
 
 This is only intended for local development/testing.
 
@@ -372,6 +404,11 @@ This is only intended for local development/testing.
 ### Feed
 - `GET /api/feed`
 
+### Admin
+- `GET /api/admin/users`
+- `POST /api/admin/users`
+- `PUT /api/admin/users/{userId}/role`
+
 ### AI (stub)
 - `POST /api/ai/recommendations`
 - `POST /api/ai/review-assistant`
@@ -406,6 +443,11 @@ Current automated coverage includes:
 - AI stub service tests
 - AI unauthorized route tests
 - authenticated AI flow tests
+- admin unauthorized route tests
+- admin authenticated flow tests
+- `SuperAdmin` permission-path tests for create/edit-role flows
+
+All current backend tests are passing locally.
 
 Run tests from `Backlogr.Api` or repo root:
 
@@ -442,14 +484,31 @@ Deployment notes:
 - Point the frontend `NUXT_PUBLIC_API_BASE` to the deployed API URL.
 - Re-run smoke tests after any deployment/config changes.
 
+Local-only features verified after the current deployment pass:
+- `SuperAdmin` role support
+- admin user-management endpoints
+- role-edit restrictions for self/protected accounts
+- admin endpoint automated tests
+
+Before or immediately after deploying the newer admin changes, re-run this smoke-test checklist against production:
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/admin/users` as `Admin` or `SuperAdmin`
+- `POST /api/admin/users` as `Admin` creating `User`
+- `POST /api/admin/users` as `SuperAdmin` creating `Admin`
+- `PUT /api/admin/users/{userId}/role` as `SuperAdmin`
+- confirm self-role editing stays blocked
+- confirm editing a `SuperAdmin` through the endpoint stays blocked
+
 ---
 
 ## Current Gaps / Next Steps
 
 Recommended next backend work:
-1. Extract auth token generation into a dedicated service.
-2. Add production-friendly admin/bootstrap tooling.
-3. Add global exception handling middleware.
-4. Add structured logging/diagnostics hardening.
-5. Replace AI stubs with Azure AI / Azure AI Search implementations.
-6. Add embeddings/vector search wiring.
+1. Deploy and smoke test the admin user-management endpoints in production.
+2. Extract auth token generation into a dedicated service.
+3. Add production-friendly admin/bootstrap tooling.
+4. Add global exception handling middleware.
+5. Add structured logging/diagnostics hardening.
+6. Replace AI stubs with Azure AI / Azure AI Search implementations.
+7. Add embeddings/vector search wiring.

@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-14
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, and local/prod config cleanup.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, the new admin user-management work verified locally, and the updated passing backend test suite.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -29,9 +29,19 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] IGDB search works in deployed environment
 - [x] IGDB import works in deployed environment
 
+### Confirmed current local behavior
+- [x] `SuperAdmin` role support added in codebase
+- [x] Admin user-management endpoints are implemented
+- [x] `Admin` can create `User`
+- [x] `SuperAdmin` can create `User` and `Admin`
+- [x] `SuperAdmin` can edit existing `User` / `Admin` roles
+- [x] Self-role editing is blocked
+- [x] Editing `SuperAdmin` via the admin endpoint is blocked
+
 ### Important scope note
 - [x] Keep current feature status conservative
 - [x] Do not treat incomplete AI/vector-search work as complete just because deployment is working
+- [x] Do not treat local-only admin work as deployed until it is actually deployed and smoke tested
 
 ---
 
@@ -44,7 +54,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `POST /api/auth/register`
 - [x] `POST /api/auth/login`
 - [x] `GET /api/auth/me`
-- [x] Role seeding for `User` and `Admin`
+- [x] Role seeding for `User`, `Admin`, and `SuperAdmin`
 - [x] Development admin seeding via user secrets
 
 ### Games / catalog
@@ -108,6 +118,15 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `DELETE /api/follows/{userId}`
 - [x] `GET /api/feed`
 
+### Admin user management
+- [x] `AdminController`
+- [x] `IAdminService`
+- [x] `AdminService`
+- [x] Admin DTOs
+- [x] `GET /api/admin/users`
+- [x] `POST /api/admin/users`
+- [x] `PUT /api/admin/users/{userId}/role`
+
 ### AI stubs
 - [x] `IRecommendationService`
 - [x] `IReviewAssistantService`
@@ -143,6 +162,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `Game.IgdbId` unique filtered index when present
 - [x] Prevent self-follow
 - [x] Keep `GameLog.Rating` as the rating source of truth
+- [x] Block admin role self-demotion through the admin endpoint
+- [x] Block editing `SuperAdmin` role assignments through the admin endpoint
 
 ---
 
@@ -165,6 +186,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Protected endpoint auth behavior
 - [x] Authenticated IGDB endpoint protection
 - [x] WebApplicationFactory happy-path flows for implemented slices
+- [x] Admin endpoint integration tests
+- [x] SuperAdmin permission-path tests
 
 ---
 
@@ -183,12 +206,14 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Keep Azure config values out of docs when not needed
 - [x] Keep local and deployed smoke tests separate from feature-completion claims
 - [x] Keep local and production databases/configuration separated
+- [ ] Deploy and smoke test the newer admin endpoints in production
 
 ---
 
 ## 5) Remaining backend work
 
 ### Higher-priority next work
+- [ ] Deploy and smoke test the admin user-management endpoints in production
 - [ ] Extract auth token generation into a dedicated service
 - [ ] Add production-friendly admin/bootstrap tooling
 - [ ] Add global exception handling middleware
@@ -202,7 +227,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 ### Potential cleanup / polish
 - [ ] Review production-friendly diagnostics strategy
 - [ ] Add clearer deployment documentation/examples where safe
-- [ ] Revisit any admin/demo tooling needed for the final presentation
+- [ ] Revisit whether admin review moderation is worth adding before final handoff
 - [ ] Clean up any optional catalog seeding/import helper scripts before final handoff
 
 ---
@@ -215,3 +240,4 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
 - The backend is live and real IGDB integration is in place, but AI/vector-search surfaces are still intentionally stubbed.
+- Admin user-management work is implemented locally and should be documented/deployed conservatively.

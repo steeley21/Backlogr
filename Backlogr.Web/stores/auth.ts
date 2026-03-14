@@ -138,28 +138,12 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(payload: LoginRequestDto): Promise<void> {
     const response = await loginRequest(payload)
     applyAuthResponse(response)
-
-    try {
-      await fetchMe()
-    }
-    catch {
-      // auth response already contains enough to treat the user as signed in
-    }
-
     isInitialized.value = true
   }
 
   async function register(payload: RegisterRequestDto): Promise<void> {
     const response = await registerRequest(payload)
     applyAuthResponse(response)
-
-    try {
-      await fetchMe()
-    }
-    catch {
-      // auth response already contains enough to treat the user as signed in
-    }
-
     isInitialized.value = true
   }
 

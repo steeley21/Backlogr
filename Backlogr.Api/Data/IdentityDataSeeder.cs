@@ -15,7 +15,8 @@ public static class IdentityDataSeeder
         string[] roleNames =
         [
             RoleNames.User,
-            RoleNames.Admin
+            RoleNames.Admin,
+            RoleNames.SuperAdmin
         ];
 
         foreach (var roleName in roleNames)

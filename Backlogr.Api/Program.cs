@@ -34,6 +34,9 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Key) ||
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
 
+builder.Services.Configure<BootstrapSuperAdminOptions>(
+    builder.Configuration.GetSection(BootstrapSuperAdminOptions.SectionName));
+
 builder.Services.AddOptions<IgdbOptions>()
     .Bind(builder.Configuration.GetSection(IgdbOptions.SectionName))
     .Validate(
@@ -144,6 +147,8 @@ builder.Services.AddScoped<IReviewInteractionService, ReviewInteractionService>(
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ISuperAdminBootstrapService, SuperAdminBootstrapService>();
 
 builder.Services.AddHttpClient<ITwitchTokenService, TwitchTokenService>(httpClient =>
 {

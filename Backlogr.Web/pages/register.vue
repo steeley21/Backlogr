@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, navigateTo } from '#imports'
-import { AxiosError } from 'axios'
 import SectionHeader from '~/components/layout/SectionHeader.vue'
 import { useAuthStore } from '~/stores/auth'
+import { getApiErrorMessage } from '~/utils/apiError'
 import type { RegisterRequestDto } from '~/types/auth'
 
 definePageMeta({
@@ -31,7 +31,7 @@ const redirectTarget = computed(() => {
     return redirect
   }
 
-  return '/'
+  return '/feed'
 })
 
 const passwordsMatch = computed(() => {
@@ -47,22 +47,6 @@ const isFormValid = computed(() => {
     && passwordsMatch.value
 })
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const apiMessage = error.response?.data
-
-    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
-      return apiMessage
-    }
-
-    if (Array.isArray(apiMessage) && apiMessage.length > 0) {
-      return apiMessage.join(', ')
-    }
-  }
-
-  return 'Unable to create your account right now. Please try again.'
-}
-
 async function handleSubmit(): Promise<void> {
   if (!isFormValid.value || isSubmitting.value) {
     return
@@ -76,7 +60,7 @@ async function handleSubmit(): Promise<void> {
     await navigateTo(redirectTarget.value)
   }
   catch (error: unknown) {
-    errorMessage.value = getErrorMessage(error)
+    errorMessage.value = getApiErrorMessage(error, 'Unable to create your account right now. Please try again.')
   }
   finally {
     isSubmitting.value = false
