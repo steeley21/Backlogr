@@ -11,6 +11,10 @@ export interface UpdateReviewRequestDto {
   hasSpoilers: boolean
 }
 
+export interface CreateReviewCommentRequestDto {
+  text: string
+}
+
 export interface ReviewResponseDto {
   reviewId: string
   userId: string
@@ -22,4 +26,16 @@ export interface ReviewResponseDto {
   hasSpoilers: boolean
   createdAt: string
   updatedAt: string
+}
+
+export interface ReviewCommentResponseDto {
+  reviewCommentId: string
+  reviewId: string
+  userId: string
+  userName: string
+  displayName: string
+  avatarUrl?: string | null
+  text: string
+  createdAt: string
+  isOwner: boolean
 }

@@ -56,6 +56,10 @@ function showSnackbar(message: string, color: SnackbarColor): void {
   }
 }
 
+function handleFeedFeedback(message: string, color: SnackbarColor): void {
+  showSnackbar(message, color)
+}
+
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
   return [...items].sort((left, right) => {
     const leftDate = left.type === 'review' ? left.reviewedAt : left.updatedAt
@@ -211,6 +215,7 @@ onMounted(async () => {
               :item="item"
               @updated="handleReviewUpdated"
               @deleted="handleReviewDeleted"
+              @feedback="handleFeedFeedback"
             />
             <FeedLogCard v-else :item="item" />
           </template>
