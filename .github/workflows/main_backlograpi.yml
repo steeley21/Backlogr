@@ -35,6 +35,15 @@ jobs:
         run: dotnet build ./Backlogr.Api/Backlogr.Api.csproj --configuration Release --no-restore
 
       - name: Run API tests
+        env:
+          ConnectionStrings__DefaultConnection: "Server=(localdb)\\MSSQLLocalDB;Database=BacklogrTestDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+          Jwt__Key: "Backlogr-Test-Jwt-Key-This-Is-Long-Enough-For-HS256-12345"
+          Jwt__Issuer: "Backlogr.Api.Tests"
+          Jwt__Audience: "Backlogr.Api.Tests.Client"
+          Igdb__ClientId: "test-client-id"
+          Igdb__ClientSecret: "test-client-secret"
+          Igdb__ApiBaseUrl: "https://example.test"
+          Cors__AllowedOrigins__0: "http://localhost"
         run: dotnet test ./Backlogr.Api.Tests/Backlogr.Api.Tests.csproj --configuration Release --no-restore
 
       - name: Publish API
