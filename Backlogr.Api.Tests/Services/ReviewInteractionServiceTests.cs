@@ -96,7 +96,7 @@ public sealed class ReviewInteractionServiceTests
     {
         var dbContext = CreateDbContext();
 
-        var user = CreateUser("comment_user", "comment_user@example.com", "Comment User");
+        var user = CreateUser("comment_user", "comment_user@example.com", "Comment User", avatarUrl: "https://example.com/comment-user.png");
         var review = CreateReview(user, CreateGame("Comment Test"));
 
         dbContext.Users.Add(user);
@@ -115,7 +115,9 @@ public sealed class ReviewInteractionServiceTests
         result.UserId.Should().Be(user.Id);
         result.UserName.Should().Be(user.UserName);
         result.DisplayName.Should().Be(user.DisplayName);
+        result.AvatarUrl.Should().Be("https://example.com/comment-user.png");
         result.Text.Should().Be("Nice review.");
+        result.IsOwner.Should().BeTrue();
 
         dbContext.ReviewComments.Should().HaveCount(1);
     }
@@ -142,6 +144,56 @@ public sealed class ReviewInteractionServiceTests
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Comment text is required*");
+    }
+
+
+    [Fact]
+    public async Task GetCommentsAsync_ShouldReturnOrderedComments_WithOwnershipFlags()
+    {
+        var dbContext = CreateDbContext();
+
+        var owner = CreateUser("comment_owner", "comment_owner@example.com", "Comment Owner", avatarUrl: "https://example.com/comment-owner.png");
+        var otherUser = CreateUser("comment_reader", "comment_reader@example.com", "Comment Reader", avatarUrl: "https://example.com/comment-reader.png");
+        var review = CreateReview(owner, CreateGame("Comments List Test"));
+
+        dbContext.Users.AddRange(owner, otherUser);
+        dbContext.Games.Add(review.Game);
+        dbContext.Reviews.Add(review);
+        dbContext.ReviewComments.AddRange(
+            new ReviewComment
+            {
+                ReviewCommentId = Guid.NewGuid(),
+                UserId = owner.Id,
+                ReviewId = review.ReviewId,
+                Text = "First comment",
+                CreatedAt = new DateTime(2026, 3, 13, 9, 0, 0, DateTimeKind.Utc),
+                User = owner,
+                Review = review
+            },
+            new ReviewComment
+            {
+                ReviewCommentId = Guid.NewGuid(),
+                UserId = otherUser.Id,
+                ReviewId = review.ReviewId,
+                Text = "Second comment",
+                CreatedAt = new DateTime(2026, 3, 13, 10, 0, 0, DateTimeKind.Utc),
+                User = otherUser,
+                Review = review
+            });
+
+        await dbContext.SaveChangesAsync();
+
+        var service = new ReviewInteractionService(dbContext);
+
+        var result = await service.GetCommentsAsync(owner.Id, review.ReviewId);
+
+        result.Should().HaveCount(2);
+        result[0].Text.Should().Be("First comment");
+        result[0].AvatarUrl.Should().Be("https://example.com/comment-owner.png");
+        result[0].IsOwner.Should().BeTrue();
+        result[1].Text.Should().Be("Second comment");
+        result[1].AvatarUrl.Should().Be("https://example.com/comment-reader.png");
+        result[1].IsOwner.Should().BeFalse();
     }
 
     [Fact]
@@ -257,7 +309,7 @@ public sealed class ReviewInteractionServiceTests
         return new ApplicationDbContext(options);
     }
 
-    private static ApplicationUser CreateUser(string userName, string email, string displayName)
+    private static ApplicationUser CreateUser(string userName, string email, string displayName, string? avatarUrl = null)
     {
         return new ApplicationUser
         {
@@ -265,6 +317,7 @@ public sealed class ReviewInteractionServiceTests
             UserName = userName,
             Email = email,
             DisplayName = displayName,
+            AvatarUrl = avatarUrl,
             CreatedAt = DateTime.UtcNow
         };
     }

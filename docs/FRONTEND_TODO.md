@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-14
 
-This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass.
+This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, plus the member-profile/feed-social feature pass and the first Vitest test pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -17,6 +17,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Frontend is deployed and working in Azure Static Web Apps
 - [x] Frontend GitHub Actions CI/CD is configured
 - [x] Production build succeeds locally (`npm run build`)
+- [x] Frontend Vitest suite passes for the current covered slices (`npm test`)
 
 ### Confirmed deployed behavior
 - [x] Register works in deployed environment
@@ -32,14 +33,20 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Admin dashboard route and role-gated navigation
 - [x] Admin user list/create/edit/delete flows
 - [x] Profile delete-account flow
+- [x] Member profile route at `/u/[username]`
+- [x] Follow / unfollow UI
+- [x] Review edit / delete UI from feed cards
+- [x] Feed like / comment UI
+- [x] Frontend test harness and first coverage pass
 
 ### Current known limitations
-- [ ] Public profile pages are not built yet
-- [ ] Follow/unfollow UI is not built yet
-- [ ] Review edit/delete UI is not built yet
-- [ ] Feed like/comment UI is not built yet
+- [x] Member profile route is built
+- [x] Follow/unfollow UI is built
+- [x] Review edit/delete UI is built
+- [x] Feed like/comment UI is built
 - [ ] Semantic search UI is not built yet
-- [ ] Frontend tests are not written yet
+- [ ] Frontend test coverage is still partial beyond the first pass
+- [ ] Member profiles are still authenticated routes rather than signed-out public pages
 
 ---
 
@@ -57,6 +64,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed types
 - [x] Library types
 - [x] Review types
+- [x] Profile/member-social types
 - [x] AI types
 - [x] Admin/account-management types
 - [ ] Consider a future cleanup pass to organize DTOs into a dedicated `types/api/` or `types/dtos/` structure
@@ -73,6 +81,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Public-route allowance for `/`, `/login`, and `/register`
 - [x] Core app routes gated behind auth
 - [x] Admin-only gate for `/admin`
+- [x] Member profile route currently stays inside the authenticated app model
 
 ---
 
@@ -93,6 +102,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] AppTopBar login/logout state
 - [x] Profile/avatar only shown when authenticated
 - [x] Self-delete account flow wired to the API
+- [x] Profile menu includes a member-profile link
 
 ---
 
@@ -102,15 +112,17 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Public landing page at `/`
 - [x] Feed moved to `/feed`
 - [x] Public vs authenticated top-bar behavior updated
+- [x] Profile menu links into `/u/[username]`
 
 ### Feed
 - [x] Replace mock feed data with live API call
-- [x] Show current user activity + followed-user activity (backend now supports this)
+- [x] Show current user activity + followed-user activity (backend supports this)
 - [x] Loading / empty / error states
+- [x] Like review UI wiring
+- [x] Comments UI wiring
+- [x] Surface like/comment counts from expanded backend feed DTO
+- [x] Review edit/delete UI from feed cards
 - [ ] Paging for feed
-- [ ] Like review UI wiring
-- [ ] Comments UI wiring
-- [ ] Surface like/comment counts if/when backend feed DTO expands
 
 ### Library
 - [x] Replace mock library data with API
@@ -125,7 +137,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Optional review creation on save
 - [x] Review assistant tools integrated
 - [ ] Search/select-game flow from inside the page itself
-- [ ] True edit-existing-review flow *(backend currently lacks “my review for this game” lookup)*
+- [ ] True edit-existing-review flow *(backend still lacks a dedicated “my review for this game” lookup endpoint)*
 
 ### Game detail
 - [x] Real game detail fetch
@@ -150,13 +162,17 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Take/count selection
 - [ ] Save-to-backlog CTA per recommendation
 
-### Profile
+### Profile / member-social
 - [x] Real authenticated profile page
 - [x] Refresh profile flow
 - [x] Delete-account section and dialog
-- [ ] Public profile route
-- [ ] Social stats / follow counts
+- [x] Member profile route `/u/[username]`
+- [x] Social stats / follow counts
+- [x] Follow / unfollow button
+- [x] Public-library tab inside member profile route
+- [x] Recent-reviews display inside member profile route
 - [ ] Editable profile fields
+- [ ] Follower/following detail lists
 
 ### Admin
 - [x] Admin dashboard route
@@ -174,23 +190,25 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 
 ### Reviews
 - [x] Create review from log page
-- [ ] Dedicated review editor route/modal
-- [ ] Edit review UI
-- [ ] Delete review UI
+- [x] Edit review UI from feed cards
+- [x] Delete review UI from feed cards
+- [ ] Dedicated review editor route/modal beyond the feed-card flow
 - [ ] Spoiler handling polish on display
 
 ### Follow / profile-social
-- [ ] Public profile page route (`/u/:username` or similar)
-- [ ] Follow button
-- [ ] Unfollow button
-- [ ] Follower/following counts
-- [ ] Tie follow actions into feed expectations
+- [x] Member profile page route (`/u/:username`)
+- [x] Follow button
+- [x] Unfollow button
+- [x] Follower/following/review/library counts
+- [x] Tie follow actions into feed expectations
+- [ ] Follower/following list pages or dialogs
 
 ### Feed interactions
-- [ ] Like review action
-- [ ] Unlike review action
-- [ ] Add comment flow
-- [ ] Delete own comment flow
+- [x] Like review action
+- [x] Unlike review action
+- [x] Add comment flow
+- [x] Delete own comment flow
+- [ ] Any richer comment-thread moderation/pagination beyond the lightweight inline thread
 
 ---
 
@@ -213,6 +231,7 @@ Current search decisions:
 - [x] Basic loading/empty/error states are present on core wired pages
 - [x] Admin success/error snackbar feedback added
 - [x] Admin create/edit/delete actions have safer loading/disabled states
+- [x] Feed interaction feedback/snackbar path added
 - [ ] Add a broader shared toast/snackbar pattern across the rest of the app
 - [ ] Tighten form validation / messaging on log + auth pages
 - [ ] Accessibility pass (labels, keyboard flow, aria polish)
@@ -227,23 +246,28 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 ### Service tests
 - [ ] `authService`
 - [ ] `gameService`
-- [ ] `feedService`
+- [x] `feedService`
 - [ ] `libraryService`
-- [ ] `reviewService`
+- [x] `reviewService`
+- [x] `profileService`
+- [x] `followService`
 - [ ] `aiService`
 - [ ] `adminService`
 
 ### Store tests
-- [ ] `authStore` token persistence + logout clears
+- [x] `authStore` token persistence + logout clears
 - [ ] Role helper visibility behavior for admin/superadmin UI
 
 ### Component / page smoke tests
 - [ ] Landing page render
 - [ ] Auth pages
-- [ ] Feed render
+- [x] Feed review card interactions
+- [x] Feed comment thread interactions
+- [ ] Feed page render as a whole
 - [ ] Browse click/import flow
 - [ ] Log form validation
 - [ ] Recommend page render
+- [x] Member profile page (`/u/[username]`)
 - [ ] Admin dashboard permissions + dialog flows
 - [ ] Profile delete-account flow
 
@@ -251,7 +275,9 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ## 8) Deployment readiness checklist (frontend side)
 
-- [ ] Rebuild and deploy frontend with the latest landing/admin/account-management changes
-- [ ] Smoke test `/`, `/feed`, `/admin`, and `/profile` against production API
+- [ ] Rebuild and deploy frontend with the latest member-profile/feed-social changes
+- [ ] Smoke test `/`, `/feed`, `/u/[username]`, `/admin`, and `/profile` against production API
+- [ ] Verify follow/unfollow behavior in production
+- [ ] Verify feed like/comment/edit/delete behavior in production
 - [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production
 - [ ] Verify delete-account redirect/logout flow in production

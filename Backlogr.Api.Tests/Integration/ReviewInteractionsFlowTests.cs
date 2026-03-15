@@ -4,6 +4,7 @@ using Backlogr.Api.Common;
 using Backlogr.Api.Data;
 using Backlogr.Api.DTOs.Reviews;
 using Backlogr.Api.Models.Entities;
+using FluentAssertions.Extensions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +32,8 @@ public sealed class ReviewInteractionsFlowTests : IClassFixture<AuthenticatedBac
             userId,
             userName: "interaction_user",
             email: "interaction_user@example.com",
-            displayName: "Interaction User");
+            displayName: "Interaction User",
+            avatarUrl: "https://example.com/interaction-user.png");
 
         var createReviewResponse = await client.PostAsJsonAsync("/api/reviews", new CreateReviewRequestDto
         {
@@ -64,7 +66,22 @@ public sealed class ReviewInteractionsFlowTests : IClassFixture<AuthenticatedBac
         comment.Should().NotBeNull();
         comment!.ReviewId.Should().Be(review.ReviewId);
         comment.UserId.Should().Be(userId);
+        comment.UserName.Should().Be("interaction_user");
+        comment.DisplayName.Should().Be("Interaction User");
+        comment.AvatarUrl.Should().Be("https://example.com/interaction-user.png");
         comment.Text.Should().Be("Great review comment.");
+        comment.IsOwner.Should().BeTrue();
+        comment.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, 10.Seconds());
+
+        var getCommentsResponse = await client.GetAsync($"/api/reviews/{review.ReviewId}/comments");
+        getCommentsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var comments = await getCommentsResponse.Content.ReadFromJsonAsync<List<ReviewCommentResponseDto>>();
+        comments.Should().NotBeNull();
+        comments!.Should().ContainSingle();
+        comments[0].ReviewCommentId.Should().Be(comment.ReviewCommentId);
+        comments[0].AvatarUrl.Should().Be("https://example.com/interaction-user.png");
+        comments[0].IsOwner.Should().BeTrue();
 
         var deleteCommentResponse = await client.DeleteAsync($"/api/comments/{comment.ReviewCommentId}");
         deleteCommentResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -122,7 +139,7 @@ public sealed class ReviewInteractionsFlowTests : IClassFixture<AuthenticatedBac
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    private async Task SeedUserAsync(Guid userId, string userName, string email, string displayName)
+    private async Task SeedUserAsync(Guid userId, string userName, string email, string displayName, string? avatarUrl = null)
     {
         using var scope = _factory.Services.CreateScope();
 
@@ -151,6 +168,7 @@ public sealed class ReviewInteractionsFlowTests : IClassFixture<AuthenticatedBac
             UserName = userName,
             Email = email,
             DisplayName = displayName,
+            AvatarUrl = avatarUrl,
             CreatedAt = DateTime.UtcNow
         };
 

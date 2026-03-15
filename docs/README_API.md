@@ -6,7 +6,7 @@ ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app 
 
 ## Current Status
 
-The backend is **deployed and working in Azure** for the current MVP, and the current codebase now also includes the new admin/user-management and account-deletion work that is ready for deployment and smoke testing.
+The backend is **deployed and working in Azure** for the current MVP. The codebase now includes the admin/account-management work, member profile endpoints, feed social-state expansion, and review comment-read support that were added after the initial deployment pass.
 
 **Production API URL:** `https://backlograpi.azurewebsites.net`
 
@@ -31,6 +31,9 @@ Implemented so far:
   - `POST /api/auth/login`
   - `GET /api/auth/me`
   - `POST /api/auth/delete-account`
+- Member profile endpoints:
+  - `GET /api/profiles/{userName}` *(authenticated)*
+  - `GET /api/profiles/{userName}/library` *(authenticated)*
 - Library/logging endpoints:
   - `GET /api/library/me`
   - `POST /api/library`
@@ -41,6 +44,7 @@ Implemented so far:
   - `DELETE /api/reviews/{reviewId}`
   - `POST /api/reviews/{reviewId}/like`
   - `DELETE /api/reviews/{reviewId}/like`
+  - `GET /api/reviews/{reviewId}/comments`
   - `POST /api/reviews/{reviewId}/comments`
   - `DELETE /api/comments/{reviewCommentId}`
 - Follow/feed endpoints:
@@ -74,6 +78,9 @@ Implemented so far:
 - `SuperAdmin` role assignment is supported through the admin role-update flow.
 - Self-service account deletion is implemented with username + current-password confirmation.
 - Account deletion uses a shared cleanup path for dependent social/review data.
+- Authenticated member profile reads are implemented for `/api/profiles/{userName}` and `/api/profiles/{userName}/library`.
+- Review comment threads can now be loaded through `GET /api/reviews/{reviewId}/comments`.
+- Feed responses now include social-state fields needed by the frontend, including avatar URL, like count, comment count, liked-by-current-user state, and owner state.
 - The temporary bootstrap endpoint should remain **disabled** during normal operation and only be enabled for a controlled one-time elevation scenario.
 
 Not implemented yet:
@@ -114,6 +121,7 @@ Backlogr.Api/
 │   ├── GamesController.cs
 │   ├── IgdbController.cs
 │   ├── LibraryController.cs
+│   ├── ProfilesController.cs
 │   └── ReviewsController.cs
 ├── Data/
 │   ├── ApplicationDbContext.cs
@@ -128,6 +136,7 @@ Backlogr.Api/
 │   ├── Games/
 │   ├── Igdb/
 │   ├── Library/
+│   ├── Profiles/
 │   └── Reviews/
 ├── Extensions/
 ├── Migrations/
@@ -190,7 +199,7 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 
 ---
 
-## Library / Review Model Notes
+## Library / Review / Social Notes
 
 `GameLog` currently supports:
 - `Status`
@@ -236,6 +245,12 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 - duplicate follow is treated as a no-op
 - unfollow missing relationship is treated as a no-op
 
+### Profile / feed behavior
+- user names are unique through Identity normalization and are used as the member-profile route key
+- member profile endpoints are authenticated in the current MVP
+- public-profile library responses intentionally exclude private `GameLog.Notes`
+- feed responses now include enough social metadata for frontend follow/like/comment UI without a second round-trip for summary state
+
 ---
 
 ## Local Setup
@@ -267,7 +282,7 @@ Recommended local secrets shape:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\MSSQLLocalDB;Database=BacklogrDev;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True"
+    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=BacklogrDev;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True"
   },
   "Jwt": {
     "Key": "replace-with-a-long-random-dev-secret",
@@ -379,6 +394,10 @@ This is only intended for local development/testing.
 - `GET /api/igdb/search`
 - `POST /api/igdb/import/{igdbId}`
 
+### Profiles
+- `GET /api/profiles/{userName}`
+- `GET /api/profiles/{userName}/library`
+
 ### Library
 - `GET /api/library/me`
 - `POST /api/library`
@@ -390,6 +409,7 @@ This is only intended for local development/testing.
 - `DELETE /api/reviews/{reviewId}`
 - `POST /api/reviews/{reviewId}/like`
 - `DELETE /api/reviews/{reviewId}/like`
+- `GET /api/reviews/{reviewId}/comments`
 - `POST /api/reviews/{reviewId}/comments`
 
 ### Comments
@@ -430,6 +450,8 @@ Current automated coverage includes:
 - feed service tests
 - feed unauthorized route tests
 - authenticated feed flow tests
+- profile service tests
+- authenticated profile flow tests
 - game service tests
 - games controller tests
 - IGDB authenticated search/import flow tests

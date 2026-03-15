@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-14
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin user-management, and self-service account deletion.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, and the member-profile/feed-social expansion.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -36,6 +36,10 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Admin user deletion endpoint added
 - [x] Self-service account deletion endpoint added
 - [x] Shared user-deletion cleanup path added for dependent records
+- [x] Authenticated member profile endpoint added
+- [x] Authenticated member public-library endpoint added
+- [x] Review comment-read endpoint added for inline comment threads
+- [x] Feed DTO expanded with social-state fields needed by the frontend
 - [x] Temporary one-time `SuperAdmin` bootstrap path added and can be disabled after use
 
 ### Important scope note
@@ -89,6 +93,16 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Import/update local `Game` rows by `IgdbId`
 - [x] Merge local catalog results with IGDB fallback for browse/search
 
+### Profiles / member-social
+- [x] `IProfileService`
+- [x] `ProfileService`
+- [x] `ProfilesController`
+- [x] `GET /api/profiles/{userName}` *(authenticated)*
+- [x] `GET /api/profiles/{userName}/library` *(authenticated)*
+- [x] Username-backed member profile lookup
+- [x] Follow state / counts returned in member profile payload
+- [x] Public library payload excludes private notes
+
 ### Library / logging
 - [x] `GameLog`
 - [x] `LibraryStatus`
@@ -116,6 +130,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `CommentsController`
 - [x] `POST /api/reviews/{reviewId}/like`
 - [x] `DELETE /api/reviews/{reviewId}/like`
+- [x] `GET /api/reviews/{reviewId}/comments`
 - [x] `POST /api/reviews/{reviewId}/comments`
 - [x] `DELETE /api/comments/{reviewCommentId}`
 
@@ -130,6 +145,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `POST /api/follows/{userId}`
 - [x] `DELETE /api/follows/{userId}`
 - [x] `GET /api/feed`
+- [x] Feed includes current-user activity in addition to followed-user activity
+- [x] Feed includes avatar, counts, liked-state, and owner-state fields
 
 ### AI stubs
 - [x] `IRecommendationService`
@@ -180,6 +197,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Like/comment rules
 - [x] Ownership / authorization rules for implemented slices
 - [x] Feed aggregation rules
+- [x] Member profile query rules
 - [x] Game search/detail rules
 - [x] IGDB search/import flow rules
 - [x] AI stub behavior rules
@@ -190,6 +208,9 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Authenticated IGDB endpoint protection
 - [x] WebApplicationFactory happy-path flows for implemented slices
 - [x] Admin user list/create/role-edit permission tests
+- [x] Member profile endpoint auth/flow tests
+- [x] Review comment-read auth/flow tests
+- [x] Feed integration assertions for expanded social-state fields
 
 ### Next backend tests to add
 - [ ] Self-delete account integration tests
@@ -214,12 +235,15 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Keep local and deployed smoke tests separate from feature-completion claims
 - [x] Keep local and production databases/configuration separated
 
-### Admin/account smoke tests for next deploy
+### Smoke tests for next deploy
 - [ ] Verify `GET /api/admin/users` works in production for Admin/SuperAdmin
 - [ ] Verify `POST /api/admin/users` respects Admin vs `SuperAdmin` role limits
 - [ ] Verify `PUT /api/admin/users/{userId}/role` works only for `SuperAdmin`
 - [ ] Verify `DELETE /api/admin/users/{userId}` guardrails in production
 - [ ] Verify `POST /api/auth/delete-account` with both failure and success cases in production
+- [ ] Verify `GET /api/profiles/{userName}` for a signed-in user in production
+- [ ] Verify `GET /api/profiles/{userName}/library` returns expected public-library data in production
+- [ ] Verify `GET /api/reviews/{reviewId}/comments` supports the deployed frontend comment-thread flow
 
 ---
 

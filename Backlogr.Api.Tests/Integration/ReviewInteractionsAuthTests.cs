@@ -13,6 +13,15 @@ public sealed class ReviewInteractionsAuthTests : IClassFixture<BacklogrApiFacto
         _client = factory.CreateClient();
     }
 
+
+    [Fact]
+    public async Task GetComments_ShouldReturnUnauthorized_WhenNoTokenProvided()
+    {
+        var response = await _client.GetAsync($"/api/reviews/{Guid.NewGuid()}/comments");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     [Fact]
     public async Task LikeReview_ShouldReturnUnauthorized_WhenNoTokenProvided()
     {

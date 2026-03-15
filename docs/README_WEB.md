@@ -2,7 +2,7 @@
 
 Nuxt 3 + Vuetify 3 + TypeScript frontend for **Backlogr** — a Letterboxd-style social web app for video games.
 
-This frontend is deployed in Azure Static Web Apps, and the current codebase now also includes the new landing-page, admin, and account-management work that is ready for deployment and smoke testing with the latest API.
+This frontend is deployed in Azure Static Web Apps. The current codebase now includes the landing page, admin/account-management flows, member profile pages, feed review interactions, and the first Vitest coverage pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -20,7 +20,7 @@ This frontend is deployed in Azure Static Web Apps, and the current codebase now
 - **Axios**
 - **Material Design Icons (MDI)**
 - **ESLint**
-- **Vitest** *(installed; tests still need to be added)*
+- **Vitest** for current frontend unit/component/page coverage
 
 ---
 
@@ -41,6 +41,18 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Shared Axios API client with bearer token support and 401 handling
 - Pinia auth store with token persistence + user rehydration
 - Feed moved to `/feed` and wired to `GET /api/feed`
+- Feed review cards now support:
+  - like / unlike
+  - inline comment threads
+  - add comment
+  - delete own comment
+  - edit / delete for review owners
+- Member profile route at `/u/[username]` with:
+  - profile header and bio
+  - follow / unfollow button
+  - follower / following / review / library counts
+  - recent reviews
+  - public library tab
 - Live browse page wired to the merged game search flow:
   - `GET /api/games/search`
   - local catalog results first
@@ -65,6 +77,7 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Review assistant wired to `POST /api/ai/review-assistant`
 - Local fallback cover asset added for deployment safety
 - Production build succeeds
+- Frontend Vitest setup is in place with current service/store/component/page tests
 - GitHub Actions CI/CD is configured for frontend deployment
 
 ### Confirmed deployed behavior
@@ -74,19 +87,17 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - The production browse catalog is populated from the live backend catalog.
 
 ### Latest codebase additions ready for deploy/smoke test
-- Public landing page at `/`
-- Authenticated feed moved to `/feed`
-- Admin dashboard and role-based admin navigation
-- Admin account-management flows for list/create/edit/delete
-- Profile delete-account flow
+- Member profile pages at `/u/[username]`
+- Follow / unfollow UI and optimistic count updates
+- Review edit / delete from feed cards
+- Feed like / unlike and inline comments
+- Frontend Vitest test suite for currently covered slices
 
 ### Current known limitations
-- Public profile pages are not built yet
-- Follow/unfollow UI is not built yet
-- Review edit/delete UI is not built yet
-- Feed like/comment UI is not built yet
+- Member profile pages are still **authenticated routes** in the current MVP, not signed-out public pages
 - Semantic search UI is not built yet
-- Frontend tests are not written yet
+- Game-detail review/activity tabs are not built yet
+- Broader frontend test coverage is still incomplete beyond the current first pass
 - AI-backed features are still limited to the current backend stub behavior
 
 ---
@@ -103,9 +114,10 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - `/browse`
 - `/game/[id]`
 - `/library`
-- `/log/[gameId]`
+- `/log` *(expects `?gameId=...`)*
 - `/profile`
 - `/recommend`
+- `/u/[username]`
 
 ### Admin-only route
 - `/admin`
@@ -118,11 +130,19 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Login/register are live against the API.
 - Auth state persists through the Pinia store + token storage.
 - Authenticated user rehydration runs through `/api/auth/me`.
-- Profile now includes a self-service delete-account flow with confirmation checks.
+- Profile includes a self-service delete-account flow with confirmation checks.
 
 ### Feed
 - Feed is live against the backend.
 - Backend includes the current user’s own activity along with followed-user activity.
+- Review cards now use backend-provided like/comment counts and liked/owner state.
+- Review likes and comments are updated inline from the feed page.
+
+### Member profiles / follows
+- Member profiles load from `/api/profiles/{userName}` and `/api/profiles/{userName}/library`.
+- User names are treated as unique handles for member-profile routing.
+- Follow/unfollow actions call the live API and update the visible follower count optimistically.
+- In the current MVP, member profiles are available inside the authenticated app rather than to signed-out visitors.
 
 ### Browse / catalog
 - Browse is no longer local-only.
@@ -136,9 +156,10 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Logging a game creates/updates the library entry.
 - Review creation is optional from the log workflow.
 - Ratings continue to come from the library/log model rather than a separate review rating field.
+- The log page is currently driven by `gameId` in the query string.
 
 ### Admin/account management
-- The admin dashboard is role-gated from the frontend and expects the new admin endpoints from the API.
+- The admin dashboard is role-gated from the frontend and expects the admin endpoints from the API.
 - `Admin` can create standard users.
 - `SuperAdmin` can create higher-privilege accounts, edit roles, and delete allowed accounts.
 - Protected actions use confirmation dialogs, filtered actions, and disabled states to reduce mistakes.
@@ -175,6 +196,12 @@ npm run dev
 npm run build
 ```
 
+### Run tests
+
+```powershell
+npm test
+```
+
 ### Runtime config
 The frontend reads its API base URL from runtime config.
 
@@ -194,22 +221,35 @@ If you are running against the local API during development, point `NUXT_PUBLIC_
 
 ```text
 Backlogr.Web/
-├── app/
-│   ├── components/
-│   ├── layouts/
-│   ├── middleware/
-│   ├── pages/
-│   ├── plugins/
-│   ├── services/
-│   ├── stores/
-│   ├── types/
-│   └── utils/
+├── components/
+├── layouts/
+├── middleware/
+├── pages/
+├── plugins/
 ├── public/
+├── services/
+├── stores/
+├── tests/
+├── types/
+├── utils/
 ├── .env.example
 ├── nuxt.config.ts
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── vitest.config.ts
 ```
+
+---
+
+## Testing
+
+Current frontend coverage includes:
+- service tests for `feedService`, `profileService`, `reviewService`, and `followService`
+- store tests for `authStore`
+- component tests for `FeedReviewCard` and `FeedReviewCommentThread`
+- page test coverage for `/u/[username]`
+
+This is the first test pass, not full app-wide coverage.
 
 ---
 
@@ -230,8 +270,10 @@ Post-deployment validation already completed for the currently deployed build:
 Recommended smoke tests for the next deploy:
 - verify `/` landing page behavior for signed-out users
 - verify `/feed` redirect/login flow
+- verify `/u/[username]` member-profile load for an authenticated user
+- verify follow/unfollow behavior against the deployed API
+- verify feed review like/comment/edit/delete flows against the deployed API
 - verify `/admin` access control for non-admin vs admin users
-- verify admin create/edit/delete flows against the deployed API
 - verify profile delete-account flow against the deployed API
 
 ---
@@ -239,13 +281,11 @@ Recommended smoke tests for the next deploy:
 ## Remaining Frontend Work
 
 Recommended next frontend work:
-1. Write frontend service/store/component tests.
-2. Build public profile pages.
-3. Build follow/unfollow UI.
-4. Build review edit/delete UI.
-5. Add feed like/comment UI.
-6. Add semantic search UI.
-7. Do a final accessibility/mobile polish pass.
+1. Add semantic search UI.
+2. Finish game-detail review/activity wiring.
+3. Expand frontend test coverage beyond the current first pass.
+4. Add broader shared snackbar/toast patterns where useful.
+5. Do a final accessibility/mobile polish pass.
 
 ---
 
@@ -253,4 +293,4 @@ Recommended next frontend work:
 
 - Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
 - Do not overstate incomplete features just because deployment is live.
-- The frontend is beyond the placeholder-only stage, but several social and AI surfaces still need completion.
+- The frontend now covers the core social/profile/feed MVP slice, but semantic search and broader polish/testing still remain.
