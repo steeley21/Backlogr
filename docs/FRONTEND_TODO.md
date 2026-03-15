@@ -281,3 +281,41 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [ ] Verify feed like/comment/edit/delete behavior in production
 - [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production
 - [ ] Verify delete-account redirect/logout flow in production
+
+
+---
+
+## Next UI / UX Enhancements
+
+### Feed tabs: For You vs Following
+- Add a two-tab feed experience:
+  - **For You**: show all recent activity
+  - **Following**: show only activity from followed users
+- Update the feed page UI to support tab switching without a full page reload
+- Preserve the selected feed tab in the route query or local state
+- Show an empty state for the Following feed when the user is not following anyone yet
+- Reuse the existing feed cards for both feed variants to avoid duplicate UI logic
+
+### Visual polish / motion pass
+- Explore adding tasteful visual enhancements inspired by **React Bits**
+- Evaluate card hover states, transitions, and lightweight motion effects that fit the Backlogr design
+- Prioritize subtle improvements over flashy effects so the app still feels clean and readable
+- Candidate areas:
+  - feed cards
+  - profile header / stat cards
+  - hover states on game cards
+  - page section transitions
+- Verify that any new animation or interaction still performs well on mobile
+
+
+## DevOps / CI Improvements
+
+### Speed up Static Web App workflow 
+- Review the Azure Static Web Apps GitHub Actions workflow for unnecessary wait time
+- Investigate why the most recent frontend deploy took ~17 minutes
+- Check for opportunities to improve:
+  - dependency caching
+  - redundant install/build steps
+  - unnecessary full rebuilds
+  - workflow trigger scope
+- Confirm the workflow still runs required frontend tests/build checks before deploy

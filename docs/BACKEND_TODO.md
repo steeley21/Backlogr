@@ -276,3 +276,14 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
 - The backend is live and real IGDB integration is in place, but AI/vector-search surfaces are still intentionally stubbed.
+
+## Next API Enhancements
+
+### Following-only feed support
+- Add backend support for a **Following** feed that returns activity only from accounts the current user follows
+- Keep the existing feed behavior as the **For You** / all-activity feed
+- Decide whether to:
+  - add a query parameter to the existing feed endpoint, or
+  - add a dedicated following-feed endpoint
+- Ensure feed pagination/filtering stays consistent across both feed versions
+- Add/update API tests to cover the following-only feed behavior
