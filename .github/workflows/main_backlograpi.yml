@@ -1,4 +1,4 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - BacklogrAPI
+name: Build, test, and deploy ASP.Net Core app to Azure Web App - BacklogrAPI
 
 on:
   push:
@@ -6,19 +6,15 @@ on:
       - main
     paths:
       - 'Backlogr.Api/**'
-      - 'Backlogr.ApiTests/**'
+      - 'Backlogr.Api.Tests/**'
       - '.github/workflows/main_backlograpi.yml'
   workflow_dispatch:
 
 jobs:
-  build:
+  build_test_publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
-    defaults:
-      run:
-        working-directory: ./Backlogr.Api
 
     steps:
       - name: Checkout
@@ -29,14 +25,20 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Restore
-        run: dotnet restore Backlogr.Api.csproj
+      - name: Restore API
+        run: dotnet restore ./Backlogr.Api/Backlogr.Api.csproj
 
-      - name: Build
-        run: dotnet build Backlogr.Api.csproj --configuration Release --no-restore
+      - name: Restore API tests
+        run: dotnet restore ./Backlogr.Api.Tests/Backlogr.Api.Tests.csproj
 
-      - name: Publish
-        run: dotnet publish Backlogr.Api.csproj --configuration Release --output "${{ github.workspace }}/published-api" --no-build
+      - name: Build API
+        run: dotnet build ./Backlogr.Api/Backlogr.Api.csproj --configuration Release --no-restore
+
+      - name: Run API tests
+        run: dotnet test ./Backlogr.Api.Tests/Backlogr.Api.Tests.csproj --configuration Release --no-restore
+
+      - name: Publish API
+        run: dotnet publish ./Backlogr.Api/Backlogr.Api.csproj --configuration Release --output "${{ github.workspace }}/published-api" --no-build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -46,7 +48,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: build_test_publish
     permissions:
       id-token: write
       contents: read
