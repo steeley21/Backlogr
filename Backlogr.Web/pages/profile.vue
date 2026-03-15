@@ -40,6 +40,10 @@ const profileHandle = computed(() => {
   return authStore.userName ? `@${authStore.userName}` : ''
 })
 
+const publicProfilePath = computed(() => {
+  return authStore.userName ? `/u/${authStore.userName}` : '/profile'
+})
+
 const canDeleteOwnAccount = computed(() => {
   return Boolean(user.value?.userName || authStore.userName)
 })
@@ -193,10 +197,20 @@ onMounted(async () => {
     </v-card>
 
     <v-card class="panel mt-4" rounded="xl" flat>
-      <div class="text-h6 font-weight-bold mb-2">What’s next</div>
-      <div class="muted">
-        Public profile pages, follow counts, review totals, and editable profile fields can be added once those backend endpoints are in place.
+      <div class="text-h6 font-weight-bold mb-2">Public profile</div>
+      <div class="muted mb-4">
+        Your public profile is now live. Open it to see how other signed-in members will view your activity and library.
       </div>
+
+      <v-btn
+        :to="publicProfilePath"
+        color="primary"
+        rounded="pill"
+        class="text-none px-6"
+        prepend-icon="mdi-account-circle-outline"
+      >
+        View public profile
+      </v-btn>
     </v-card>
 
     <v-card class="danger-panel mt-4" rounded="xl" flat>

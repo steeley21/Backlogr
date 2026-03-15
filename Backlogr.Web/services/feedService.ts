@@ -25,6 +25,7 @@ function mapFeedItem(item: FeedItemResponseDto): FeedItem {
         userId: item.userId,
         userName: item.userName,
         displayName: item.displayName,
+        avatarUrl: item.avatarUrl ?? undefined,
       },
       game: {
         gameId: item.gameId,
@@ -35,9 +36,10 @@ function mapFeedItem(item: FeedItemResponseDto): FeedItem {
       reviewedAt: item.activityAt,
       text: item.reviewText ?? '',
       hasSpoilers: item.hasSpoilers ?? false,
-      likeCount: 0,
-      commentCount: 0,
-      liked: false,
+      likeCount: item.likeCount,
+      commentCount: item.commentCount,
+      liked: item.likedByCurrentUser,
+      isOwner: item.isOwner,
     }
 
     return reviewItem
@@ -50,6 +52,7 @@ function mapFeedItem(item: FeedItemResponseDto): FeedItem {
       userId: item.userId,
       userName: item.userName,
       displayName: item.displayName,
+      avatarUrl: item.avatarUrl ?? undefined,
     },
     game: {
       gameId: item.gameId,

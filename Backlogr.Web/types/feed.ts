@@ -27,6 +27,7 @@ export interface FeedReviewItem {
   likeCount: number
   commentCount: number
   liked?: boolean
+  isOwner: boolean
 }
 
 export interface FeedLogItem {
@@ -49,6 +50,7 @@ export interface FeedItemResponseDto {
   userId: string
   userName: string
   displayName: string
+  avatarUrl: string | null
   gameId: string
   gameTitle: string
   coverImageUrl: string | null
@@ -60,4 +62,8 @@ export interface FeedItemResponseDto {
   hours: number | null
   reviewText: string | null
   hasSpoilers: boolean | null
+  likeCount: number
+  commentCount: number
+  likedByCurrentUser: boolean
+  isOwner: boolean
 }

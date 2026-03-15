@@ -68,6 +68,10 @@ const profileSubtext = computed(() => {
   return authStore.user?.email ?? ''
 })
 
+const publicProfilePath = computed(() => {
+  return authStore.userName ? `/u/${authStore.userName}` : '/profile'
+})
+
 const avatarInitials = computed(() => {
   const source = authStore.displayName || authStore.userName || 'B'
   const parts = source
@@ -205,7 +209,12 @@ async function handleLogout(): Promise<void> {
                 <v-list-item
                   to="/profile"
                   prepend-icon="mdi-account-outline"
-                  title="Profile"
+                  title="Account settings"
+                />
+                <v-list-item
+                  :to="publicProfilePath"
+                  prepend-icon="mdi-account-circle-outline"
+                  title="Public profile"
                 />
                 <v-list-item
                   to="/library"

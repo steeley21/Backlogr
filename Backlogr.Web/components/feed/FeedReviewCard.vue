@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { FeedReviewItem } from '~/types/feed'
 import StarRating from '~/components/shared/StarRating.vue'
+import type { FeedReviewItem } from '~/types/feed'
 
 const props = defineProps<{ item: FeedReviewItem }>()
 
@@ -9,18 +9,45 @@ const dateLabel = computed(() => {
   const d = new Date(props.item.reviewedAt)
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 })
+
+const profilePath = computed(() => {
+  return `/u/${props.item.user.userName}`
+})
+
+const avatarInitials = computed(() => {
+  const source = props.item.user.displayName || props.item.user.userName || 'B'
+  const parts = source
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (parts.length === 0) {
+    return 'B'
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+})
 </script>
 
 <template>
   <v-card class="card" rounded="xl" flat>
     <div class="top-row">
-      <v-avatar size="44" class="avatar">
-        <v-img :src="item.user.avatarUrl" :alt="item.user.displayName" cover />
-      </v-avatar>
+      <NuxtLink :to="profilePath" class="avatar-link" :aria-label="`Open ${item.user.displayName}`">
+        <v-avatar size="44" class="avatar">
+          <v-img v-if="item.user.avatarUrl" :src="item.user.avatarUrl" :alt="item.user.displayName" cover />
+          <span v-else class="avatar-fallback">{{ avatarInitials }}</span>
+        </v-avatar>
+      </NuxtLink>
 
       <div class="content">
         <div class="headline">
-          <span class="name">{{ item.user.displayName }}</span>
+          <NuxtLink :to="profilePath" class="name-link">
+            {{ item.user.displayName }}
+          </NuxtLink>
           <span class="muted">reviewed</span>
           <NuxtLink :to="`/game/${item.game.gameId}`" class="game-link">
             {{ item.game.title }}
@@ -29,6 +56,14 @@ const dateLabel = computed(() => {
 
         <div class="subline">
           <StarRating v-if="typeof item.rating === 'number'" :rating="item.rating" />
+          <v-chip
+            v-if="item.hasSpoilers"
+            size="small"
+            color="warning"
+            variant="tonal"
+          >
+            Spoilers
+          </v-chip>
           <span class="muted">{{ dateLabel }}</span>
         </div>
       </div>
@@ -79,8 +114,19 @@ const dateLabel = computed(() => {
   gap: 14px;
 }
 
-.avatar {
+.avatar,
+.avatar-link {
   flex: 0 0 auto;
+}
+
+.avatar-link {
+  text-decoration: none;
+}
+
+.avatar-fallback {
+  color: var(--foreground);
+  font-size: 0.85rem;
+  font-weight: 800;
 }
 
 .content {
@@ -95,9 +141,16 @@ const dateLabel = computed(() => {
   gap: 10px;
 }
 
-.name {
-  font-weight: 650;
+.name-link,
+.game-link {
   color: var(--foreground);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.name-link:hover,
+.game-link:hover {
+  text-decoration: underline;
 }
 
 .subline {
@@ -111,16 +164,6 @@ const dateLabel = computed(() => {
 .muted {
   color: var(--muted-foreground);
   font-size: 0.95rem;
-}
-
-.game-link {
-  color: var(--foreground);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.game-link:hover {
-  text-decoration: underline;
 }
 
 .thumb {
@@ -142,6 +185,7 @@ const dateLabel = computed(() => {
   color: color-mix(in srgb, var(--foreground) 86%, transparent);
   line-height: 1.65;
   margin: 0 0 10px;
+  white-space: pre-wrap;
 }
 
 .actions :deep(.v-btn) {
