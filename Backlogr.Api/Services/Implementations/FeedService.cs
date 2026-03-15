@@ -41,6 +41,7 @@ public sealed class FeedService : IFeedService
                 UserId = gl.UserId,
                 UserName = gl.User.UserName ?? string.Empty,
                 DisplayName = gl.User.DisplayName,
+                AvatarUrl = gl.User.AvatarUrl,
                 GameId = gl.GameId,
                 GameTitle = gl.Game.Title,
                 CoverImageUrl = gl.Game.CoverImageUrl,
@@ -51,7 +52,11 @@ public sealed class FeedService : IFeedService
                 Platform = gl.Platform,
                 Hours = gl.Hours,
                 ReviewText = null,
-                HasSpoilers = null
+                HasSpoilers = null,
+                LikeCount = 0,
+                CommentCount = 0,
+                LikedByCurrentUser = false,
+                IsOwner = gl.UserId == userId
             })
             .ToListAsync();
 
@@ -67,6 +72,7 @@ public sealed class FeedService : IFeedService
                 UserId = r.UserId,
                 UserName = r.User.UserName ?? string.Empty,
                 DisplayName = r.User.DisplayName,
+                AvatarUrl = r.User.AvatarUrl,
                 GameId = r.GameId,
                 GameTitle = r.Game.Title,
                 CoverImageUrl = r.Game.CoverImageUrl,
@@ -77,7 +83,11 @@ public sealed class FeedService : IFeedService
                 Platform = null,
                 Hours = null,
                 ReviewText = r.Text,
-                HasSpoilers = r.HasSpoilers
+                HasSpoilers = r.HasSpoilers,
+                LikeCount = r.ReviewLikes.Count,
+                CommentCount = r.ReviewComments.Count,
+                LikedByCurrentUser = r.ReviewLikes.Any(rl => rl.UserId == userId),
+                IsOwner = r.UserId == userId
             })
             .ToListAsync();
 

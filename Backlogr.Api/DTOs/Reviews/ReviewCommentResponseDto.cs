@@ -12,7 +12,11 @@ public sealed class ReviewCommentResponseDto
 
     public string DisplayName { get; set; } = string.Empty;
 
+    public string? AvatarUrl { get; set; }
+
     public string Text { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }
+
+    public bool IsOwner { get; set; }
 }

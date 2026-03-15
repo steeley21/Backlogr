@@ -119,6 +119,26 @@ public sealed class ReviewsController : ControllerBase
     }
 
 
+    [HttpGet("{reviewId:guid}/comments")]
+    public async Task<ActionResult<IReadOnlyList<ReviewCommentResponseDto>>> GetComments(Guid reviewId)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var result = await _reviewInteractionService.GetCommentsAsync(userId.Value, reviewId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
     [HttpPost("{reviewId:guid}/like")]
     public async Task<IActionResult> LikeReview(Guid reviewId)
     {

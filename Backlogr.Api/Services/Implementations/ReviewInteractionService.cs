@@ -15,6 +15,29 @@ public sealed class ReviewInteractionService : IReviewInteractionService
         _dbContext = dbContext;
     }
 
+    public async Task<IReadOnlyList<ReviewCommentResponseDto>> GetCommentsAsync(Guid currentUserId, Guid reviewId)
+    {
+        await EnsureReviewExistsAsync(reviewId);
+
+        return await _dbContext.ReviewComments
+            .AsNoTracking()
+            .Where(rc => rc.ReviewId == reviewId)
+            .OrderBy(rc => rc.CreatedAt)
+            .Select(rc => new ReviewCommentResponseDto
+            {
+                ReviewCommentId = rc.ReviewCommentId,
+                ReviewId = rc.ReviewId,
+                UserId = rc.UserId,
+                UserName = rc.User.UserName ?? string.Empty,
+                DisplayName = rc.User.DisplayName,
+                AvatarUrl = rc.User.AvatarUrl,
+                Text = rc.Text,
+                CreatedAt = rc.CreatedAt,
+                IsOwner = rc.UserId == currentUserId
+            })
+            .ToListAsync();
+    }
+
     public async Task AddLikeAsync(Guid userId, Guid reviewId)
     {
         await EnsureReviewExistsAsync(reviewId);
@@ -82,8 +105,10 @@ public sealed class ReviewInteractionService : IReviewInteractionService
             UserId = comment.UserId,
             UserName = comment.User.UserName ?? string.Empty,
             DisplayName = comment.User.DisplayName,
+            AvatarUrl = comment.User.AvatarUrl,
             Text = comment.Text,
-            CreatedAt = comment.CreatedAt
+            CreatedAt = comment.CreatedAt,
+            IsOwner = comment.UserId == userId
         };
     }
 

@@ -14,6 +14,8 @@ public sealed class FeedItemResponseDto
 
     public string DisplayName { get; set; } = string.Empty;
 
+    public string? AvatarUrl { get; set; }
+
     public Guid GameId { get; set; }
 
     public string GameTitle { get; set; } = string.Empty;
@@ -35,4 +37,12 @@ public sealed class FeedItemResponseDto
     public string? ReviewText { get; set; }
 
     public bool? HasSpoilers { get; set; }
+
+    public int LikeCount { get; set; }
+
+    public int CommentCount { get; set; }
+
+    public bool LikedByCurrentUser { get; set; }
+
+    public bool IsOwner { get; set; }
 }
