@@ -5,10 +5,12 @@ import FeedLogCard from '~/components/feed/FeedLogCard.vue'
 import FeedReviewCard from '~/components/feed/FeedReviewCard.vue'
 import { getFeed } from '~/services/feedService'
 import { useAuthStore } from '~/stores/auth'
-import type { FeedItem } from '~/types/feed'
+import type { FeedItem, FeedReviewItem } from '~/types/feed'
+import type { ReviewResponseDto } from '~/types/review'
 import { getApiErrorMessage } from '~/utils/apiError'
 
 type FeedFilter = 'all' | 'reviews' | 'logs'
+type SnackbarColor = 'success' | 'error'
 
 const authStore = useAuthStore()
 
@@ -16,6 +18,11 @@ const filter = ref<FeedFilter>('all')
 const feedItems = ref<FeedItem[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const snackbar = ref({
+  isOpen: false,
+  color: 'success' as SnackbarColor,
+  message: '',
+})
 
 const displayName = computed(() => {
   return authStore.displayName || authStore.userName || 'there'
@@ -41,6 +48,23 @@ const reviewCount = computed(() => {
   return feedItems.value.filter(item => item.type === 'review').length
 })
 
+function showSnackbar(message: string, color: SnackbarColor): void {
+  snackbar.value = {
+    isOpen: true,
+    color,
+    message,
+  }
+}
+
+function sortFeedItems(items: FeedItem[]): FeedItem[] {
+  return [...items].sort((left, right) => {
+    const leftDate = left.type === 'review' ? left.reviewedAt : left.updatedAt
+    const rightDate = right.type === 'review' ? right.reviewedAt : right.updatedAt
+
+    return Date.parse(rightDate) - Date.parse(leftDate)
+  })
+}
+
 async function loadFeed(): Promise<void> {
   isLoading.value = true
   errorMessage.value = ''
@@ -55,6 +79,31 @@ async function loadFeed(): Promise<void> {
   finally {
     isLoading.value = false
   }
+}
+
+function handleReviewUpdated(updatedReview: ReviewResponseDto): void {
+  const nextItems = feedItems.value.map((item) => {
+    if (item.type !== 'review' || item.id !== updatedReview.reviewId) {
+      return item
+    }
+
+    const updatedItem: FeedReviewItem = {
+      ...item,
+      text: updatedReview.text,
+      hasSpoilers: updatedReview.hasSpoilers,
+      reviewedAt: updatedReview.updatedAt,
+    }
+
+    return updatedItem
+  })
+
+  feedItems.value = sortFeedItems(nextItems)
+  showSnackbar('Review updated.', 'success')
+}
+
+function handleReviewDeleted(reviewId: string): void {
+  feedItems.value = feedItems.value.filter(item => !(item.type === 'review' && item.id === reviewId))
+  showSnackbar('Review deleted.', 'success')
 }
 
 onMounted(async () => {
@@ -157,7 +206,12 @@ onMounted(async () => {
 
         <div v-else class="d-flex flex-column ga-4">
           <template v-for="item in visibleItems" :key="item.id">
-            <FeedReviewCard v-if="item.type === 'review'" :item="item" />
+            <FeedReviewCard
+              v-if="item.type === 'review'"
+              :item="item"
+              @updated="handleReviewUpdated"
+              @deleted="handleReviewDeleted"
+            />
             <FeedLogCard v-else :item="item" />
           </template>
         </div>
@@ -206,6 +260,15 @@ onMounted(async () => {
         </v-card>
       </v-col>
     </v-row>
+
+    <v-snackbar
+      v-model="snackbar.isOpen"
+      :color="snackbar.color"
+      timeout="2800"
+      location="bottom right"
+    >
+      {{ snackbar.message }}
+    </v-snackbar>
   </div>
 </template>
 
