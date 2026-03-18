@@ -14,24 +14,35 @@ public sealed class FeedService : IFeedService
         _dbContext = dbContext;
     }
 
-    public async Task<IReadOnlyList<FeedItemResponseDto>> GetFeedAsync(Guid userId, int take = 25)
+    public async Task<IReadOnlyList<FeedItemResponseDto>> GetFeedAsync(Guid userId, FeedScope scope, int take = 25)
     {
         take = Math.Clamp(take, 1, 100);
 
-        var activityUserIds = await _dbContext.Follows
-            .AsNoTracking()
-            .Where(f => f.FollowerId == userId)
-            .Select(f => f.FollowingId)
-            .ToListAsync();
+        List<Guid>? activityUserIds = null;
 
-        activityUserIds.Add(userId);
-        activityUserIds = activityUserIds
-            .Distinct()
-            .ToList();
+        if (scope == FeedScope.Following)
+        {
+            activityUserIds = await _dbContext.Follows
+                .AsNoTracking()
+                .Where(f => f.FollowerId == userId)
+                .Select(f => f.FollowingId)
+                .ToListAsync();
 
-        var logItems = await _dbContext.GameLogs
-            .AsNoTracking()
-            .Where(gl => activityUserIds.Contains(gl.UserId))
+            activityUserIds.Add(userId);
+            activityUserIds = activityUserIds
+                .Distinct()
+                .ToList();
+        }
+
+        IQueryable<Models.Entities.GameLog> logQuery = _dbContext.GameLogs
+            .AsNoTracking();
+
+        if (activityUserIds is not null)
+        {
+            logQuery = logQuery.Where(gl => activityUserIds.Contains(gl.UserId));
+        }
+
+        var logItems = await logQuery
             .Include(gl => gl.User)
             .Include(gl => gl.Game)
             .Select(gl => new FeedItemResponseDto
@@ -56,13 +67,19 @@ public sealed class FeedService : IFeedService
                 LikeCount = 0,
                 CommentCount = 0,
                 LikedByCurrentUser = false,
-                IsOwner = gl.UserId == userId
+                IsOwner = gl.UserId == userId,
             })
             .ToListAsync();
 
-        var reviewItems = await _dbContext.Reviews
-            .AsNoTracking()
-            .Where(r => activityUserIds.Contains(r.UserId))
+        IQueryable<Models.Entities.Review> reviewQuery = _dbContext.Reviews
+            .AsNoTracking();
+
+        if (activityUserIds is not null)
+        {
+            reviewQuery = reviewQuery.Where(r => activityUserIds.Contains(r.UserId));
+        }
+
+        var reviewItems = await reviewQuery
             .Include(r => r.User)
             .Include(r => r.Game)
             .Select(r => new FeedItemResponseDto
@@ -87,7 +104,7 @@ public sealed class FeedService : IFeedService
                 LikeCount = r.ReviewLikes.Count,
                 CommentCount = r.ReviewComments.Count,
                 LikedByCurrentUser = r.ReviewLikes.Any(rl => rl.UserId == userId),
-                IsOwner = r.UserId == userId
+                IsOwner = r.UserId == userId,
             })
             .ToListAsync();
 

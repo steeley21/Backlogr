@@ -4,5 +4,5 @@ namespace Backlogr.Api.Services.Interfaces;
 
 public interface IFeedService
 {
-    Task<IReadOnlyList<FeedItemResponseDto>> GetFeedAsync(Guid userId, int take = 25);
+    Task<IReadOnlyList<FeedItemResponseDto>> GetFeedAsync(Guid userId, FeedScope scope, int take = 25);
 }

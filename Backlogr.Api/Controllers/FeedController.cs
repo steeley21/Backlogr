@@ -19,7 +19,9 @@ public sealed class FeedController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<FeedItemResponseDto>>> GetFeed([FromQuery] int take = 25)
+    public async Task<ActionResult<IReadOnlyList<FeedItemResponseDto>>> GetFeed(
+        [FromQuery] int take = 25,
+        [FromQuery] string scope = "for-you")
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -27,8 +29,29 @@ public sealed class FeedController : ControllerBase
             return Unauthorized();
         }
 
-        var items = await _feedService.GetFeedAsync(userId.Value, take);
+        if (!TryParseFeedScope(scope, out var feedScope))
+        {
+            return BadRequest("Invalid feed scope. Use 'for-you' or 'following'.");
+        }
+
+        var items = await _feedService.GetFeedAsync(userId.Value, feedScope, take);
         return Ok(items);
+    }
+
+    private static bool TryParseFeedScope(string? value, out FeedScope scope)
+    {
+        switch (value?.Trim().ToLowerInvariant())
+        {
+            case "for-you":
+                scope = FeedScope.ForYou;
+                return true;
+            case "following":
+                scope = FeedScope.Following;
+                return true;
+            default:
+                scope = FeedScope.ForYou;
+                return false;
+        }
     }
 
     private Guid? GetCurrentUserId()
