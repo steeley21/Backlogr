@@ -19,7 +19,7 @@ describe('feedService', () => {
     api.get.mockReset()
   })
 
-  it('maps review and log feed items from the API response', async () => {
+  it('maps review and log feed items from the API response and sends the selected scope', async () => {
     api.get.mockResolvedValue({
       data: [
         {
@@ -71,11 +71,18 @@ describe('feedService', () => {
       ],
     })
 
-    const result = await getFeed(10)
+    const result = await getFeed({
+      take: 10,
+      scope: 'following',
+    })
 
     expect(api.get).toHaveBeenCalledWith('/api/Feed', {
-      params: { take: 10 },
+      params: {
+        take: 10,
+        scope: 'following',
+      },
     })
+
     expect(result).toEqual([
       {
         type: 'review',
@@ -121,5 +128,20 @@ describe('feedService', () => {
         updatedAt: '2026-03-13T08:00:00Z',
       },
     ])
+  })
+
+  it('defaults to the for-you scope', async () => {
+    api.get.mockResolvedValue({
+      data: [],
+    })
+
+    await getFeed()
+
+    expect(api.get).toHaveBeenCalledWith('/api/Feed', {
+      params: {
+        take: 25,
+        scope: 'for-you',
+      },
+    })
   })
 })

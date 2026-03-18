@@ -1,8 +1,8 @@
 # BACKEND_TODO — Backlogr.Api
 
-Last updated: 2026-03-14
+Last updated: 2026-03-17
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, and the member-profile/feed-social expansion.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, and the new **For You / Following** feed scope split.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -29,7 +29,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] IGDB search works in deployed environment
 - [x] IGDB import works in deployed environment
 
-### Recent codebase additions ready for deploy/smoke test
+### Latest local codebase additions ready for next deploy / smoke test
 - [x] `SuperAdmin` role added to the backend role model
 - [x] Admin user list/create endpoints added
 - [x] `SuperAdmin` role-edit endpoint support added
@@ -40,6 +40,8 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Authenticated member public-library endpoint added
 - [x] Review comment-read endpoint added for inline comment threads
 - [x] Feed DTO expanded with social-state fields needed by the frontend
+- [x] Feed scope support added for **For You** vs **Following**
+- [x] Feed tests updated to cover both scopes
 - [x] Temporary one-time `SuperAdmin` bootstrap path added and can be disabled after use
 
 ### Important scope note
@@ -145,8 +147,12 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `POST /api/follows/{userId}`
 - [x] `DELETE /api/follows/{userId}`
 - [x] `GET /api/feed`
-- [x] Feed includes current-user activity in addition to followed-user activity
+- [x] `GET /api/feed?scope=for-you`
+- [x] `GET /api/feed?scope=following`
+- [x] **For You** scope returns broader recent activity
+- [x] **Following** scope returns followed-user activity plus current-user activity
 - [x] Feed includes avatar, counts, liked-state, and owner-state fields
+- [x] Invalid feed scopes return `400 Bad Request`
 
 ### AI stubs
 - [x] `IRecommendationService`
@@ -197,6 +203,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Like/comment rules
 - [x] Ownership / authorization rules for implemented slices
 - [x] Feed aggregation rules
+- [x] Feed scope rules for **For You** and **Following**
 - [x] Member profile query rules
 - [x] Game search/detail rules
 - [x] IGDB search/import flow rules
@@ -210,6 +217,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Admin user list/create/role-edit permission tests
 - [x] Member profile endpoint auth/flow tests
 - [x] Review comment-read auth/flow tests
+- [x] Feed integration assertions for both feed scopes
 - [x] Feed integration assertions for expanded social-state fields
 
 ### Next backend tests to add
@@ -244,6 +252,9 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Verify `GET /api/profiles/{userName}` for a signed-in user in production
 - [ ] Verify `GET /api/profiles/{userName}/library` returns expected public-library data in production
 - [ ] Verify `GET /api/reviews/{reviewId}/comments` supports the deployed frontend comment-thread flow
+- [ ] Verify `GET /api/feed?scope=for-you` returns the broader feed in production
+- [ ] Verify `GET /api/feed?scope=following` returns followed-user + self activity in production
+- [ ] Verify invalid `scope` values return `400 Bad Request` in production
 
 ---
 
@@ -265,6 +276,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Add clearer deployment documentation/examples where safe
 - [ ] Revisit any admin/demo tooling needed for the final presentation
 - [ ] Clean up any optional catalog seeding/import helper scripts before final handoff
+- [ ] Revisit feed paging/filtering strategy once production usage grows
 
 ---
 
@@ -276,14 +288,3 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
 - The backend is live and real IGDB integration is in place, but AI/vector-search surfaces are still intentionally stubbed.
-
-## Next API Enhancements
-
-### Following-only feed support
-- Add backend support for a **Following** feed that returns activity only from accounts the current user follows
-- Keep the existing feed behavior as the **For You** / all-activity feed
-- Decide whether to:
-  - add a query parameter to the existing feed endpoint, or
-  - add a dedicated following-feed endpoint
-- Ensure feed pagination/filtering stays consistent across both feed versions
-- Add/update API tests to cover the following-only feed behavior

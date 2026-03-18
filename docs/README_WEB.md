@@ -2,7 +2,7 @@
 
 Nuxt 3 + Vuetify 3 + TypeScript frontend for **Backlogr** — a Letterboxd-style social web app for video games.
 
-This frontend is deployed in Azure Static Web Apps. The current codebase now includes the landing page, admin/account-management flows, member profile pages, feed review interactions, and the first Vitest coverage pass.
+This frontend is deployed in Azure Static Web Apps. The current codebase now includes the landing page, admin/account-management flows, member profile pages, feed review interactions, the new **For You / Following** feed split, and the current Vitest coverage pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -41,6 +41,12 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Shared Axios API client with bearer token support and 401 handling
 - Pinia auth store with token persistence + user rehydration
 - Feed moved to `/feed` and wired to `GET /api/feed`
+- Feed now supports two source tabs:
+  - **For You** — all recent activity across the app
+  - **Following** — followed-user activity plus the current user’s own activity
+- Feed source tab is preserved in the route query:
+  - `/feed?tab=for-you`
+  - `/feed?tab=following`
 - Feed review cards now support:
   - like / unlike
   - inline comment threads
@@ -76,7 +82,7 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - AI Picks page wired to `POST /api/ai/recommendations`
 - Review assistant wired to `POST /api/ai/review-assistant`
 - Local fallback cover asset added for deployment safety
-- Production build succeeds
+- Production build succeeds locally
 - Frontend Vitest setup is in place with current service/store/component/page tests
 - GitHub Actions CI/CD is configured for frontend deployment
 
@@ -86,18 +92,18 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Frontend is successfully calling the deployed API.
 - The production browse catalog is populated from the live backend catalog.
 
-### Latest codebase additions ready for deploy/smoke test
-- Member profile pages at `/u/[username]`
-- Follow / unfollow UI and optimistic count updates
-- Review edit / delete from feed cards
-- Feed like / unlike and inline comments
-- Frontend Vitest test suite for currently covered slices
+### Latest codebase additions ready for next deploy / smoke test
+- Feed source tabs: **For You** and **Following**
+- Route-query persistence for the selected feed tab
+- Feed page empty-state/copy updates for the new feed split
+- Feed page Vitest coverage for source-tab behavior
+- Expanded `feedService` test coverage for feed scopes
 
 ### Current known limitations
 - Member profile pages are still **authenticated routes** in the current MVP, not signed-out public pages
 - Semantic search UI is not built yet
 - Game-detail review/activity tabs are not built yet
-- Broader frontend test coverage is still incomplete beyond the current first pass
+- Broader frontend test coverage is still incomplete beyond the current covered slices
 - AI-backed features are still limited to the current backend stub behavior
 
 ---
@@ -134,9 +140,11 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 
 ### Feed
 - Feed is live against the backend.
-- Backend includes the current user’s own activity along with followed-user activity.
-- Review cards now use backend-provided like/comment counts and liked/owner state.
+- The feed page now supports **For You** and **Following** source tabs.
+- The selected tab is stored in the route query so refresh/back navigation keeps the same feed source.
+- Review cards use backend-provided like/comment counts and liked/owner state.
 - Review likes and comments are updated inline from the feed page.
+- The existing local `All / Reviews / Logs` filter still applies inside both feed tabs.
 
 ### Member profiles / follows
 - Member profiles load from `/api/profiles/{userName}` and `/api/profiles/{userName}/library`.
@@ -247,9 +255,10 @@ Current frontend coverage includes:
 - service tests for `feedService`, `profileService`, `reviewService`, and `followService`
 - store tests for `authStore`
 - component tests for `FeedReviewCard` and `FeedReviewCommentThread`
+- page test coverage for `/feed`
 - page test coverage for `/u/[username]`
 
-This is the first test pass, not full app-wide coverage.
+This is still partial app coverage, but the current covered slices are passing.
 
 ---
 
@@ -269,10 +278,12 @@ Post-deployment validation already completed for the currently deployed build:
 
 Recommended smoke tests for the next deploy:
 - verify `/` landing page behavior for signed-out users
-- verify `/feed` redirect/login flow
-- verify `/u/[username]` member-profile load for an authenticated user
+- verify `/feed?tab=for-you` loads the broader feed correctly
+- verify `/feed?tab=following` loads followed-user + self activity correctly
+- verify the feed tab stays selected after refresh/navigation
 - verify follow/unfollow behavior against the deployed API
 - verify feed review like/comment/edit/delete flows against the deployed API
+- verify `/u/[username]` member-profile load for an authenticated user
 - verify `/admin` access control for non-admin vs admin users
 - verify profile delete-account flow against the deployed API
 
@@ -283,7 +294,7 @@ Recommended smoke tests for the next deploy:
 Recommended next frontend work:
 1. Add semantic search UI.
 2. Finish game-detail review/activity wiring.
-3. Expand frontend test coverage beyond the current first pass.
+3. Expand frontend test coverage beyond the current covered slices.
 4. Add broader shared snackbar/toast patterns where useful.
 5. Do a final accessibility/mobile polish pass.
 
@@ -293,4 +304,4 @@ Recommended next frontend work:
 
 - Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
 - Do not overstate incomplete features just because deployment is live.
-- The frontend now covers the core social/profile/feed MVP slice, but semantic search and broader polish/testing still remain.
+- The frontend now covers the core social/profile/feed MVP slice, including the new feed split, but semantic search and broader polish/testing still remain.

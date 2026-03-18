@@ -5,12 +5,23 @@ import type {
   FeedItemResponseDto,
   FeedLogItem,
   FeedReviewItem,
+  FeedScope,
 } from '~/types/feed'
 
-export async function getFeed(take = 25): Promise<FeedItem[]> {
+export interface GetFeedOptions {
+  take?: number
+  scope?: FeedScope
+}
+
+export async function getFeed(options: GetFeedOptions = {}): Promise<FeedItem[]> {
+  const { take = 25, scope = 'for-you' } = options
+
   const api = useApi()
   const response = await api.get<FeedItemResponseDto[]>('/api/Feed', {
-    params: { take },
+    params: {
+      take,
+      scope,
+    },
   })
 
   return response.data.map(mapFeedItem)

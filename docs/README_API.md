@@ -6,7 +6,7 @@ ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app 
 
 ## Current Status
 
-The backend is **deployed and working in Azure** for the current MVP. The codebase now includes the admin/account-management work, member profile endpoints, feed social-state expansion, and review comment-read support that were added after the initial deployment pass.
+The backend is **deployed and working in Azure** for the current MVP. The codebase now includes the admin/account-management work, member profile endpoints, feed social-state expansion, review comment-read support, and the new feed scope split used by the frontend.
 
 **Production API URL:** `https://backlograpi.azurewebsites.net`
 
@@ -67,23 +67,19 @@ Implemented so far:
 ### Confirmed deployed behavior
 - Swagger is available for the deployed API.
 - Register, login, library, and feed flows are working in the deployed environment at the same level they were working in development.
-- Feed includes the **current user’s own activity** in addition to activity from followed users.
 - `GameLog.Rating` remains the source of truth for ratings.
 - IGDB search and import are working against the real IGDB API in both local development and production.
 - Browse/search can use the local catalog first and pull in IGDB-backed results through the backend search flow.
 - AI surfaces are still stub-backed for now.
 
-### Latest codebase additions ready for deploy/smoke test
-- Admin user list/create/edit/delete flows are implemented.
-- `SuperAdmin` role assignment is supported through the admin role-update flow.
-- Self-service account deletion is implemented with username + current-password confirmation.
-- Account deletion uses a shared cleanup path for dependent social/review data.
-- Authenticated member profile reads are implemented for `/api/profiles/{userName}` and `/api/profiles/{userName}/library`.
-- Review comment threads can now be loaded through `GET /api/reviews/{reviewId}/comments`.
-- Feed responses now include social-state fields needed by the frontend, including avatar URL, like count, comment count, liked-by-current-user state, and owner state.
-- The temporary bootstrap endpoint should remain **disabled** during normal operation and only be enabled for a controlled one-time elevation scenario.
+### Latest codebase additions ready for next deploy / smoke test
+- Feed now supports `scope=for-you` and `scope=following` on `GET /api/feed`
+- **For You** returns broader recent activity across the app
+- **Following** returns followed-user activity plus the current user’s own activity
+- Feed controller validation now rejects invalid `scope` values with `400 Bad Request`
+- Feed service and integration tests now cover both feed scopes
 
-Not implemented yet:
+### Not implemented yet
 - Real Azure AI / Azure AI Search integration
 - Production-grade global exception handling middleware
 - Structured logging / production diagnostics hardening
@@ -249,7 +245,10 @@ Identity fields such as `UserName` and `Email` come from `IdentityUser<Guid>`.
 - user names are unique through Identity normalization and are used as the member-profile route key
 - member profile endpoints are authenticated in the current MVP
 - public-profile library responses intentionally exclude private `GameLog.Notes`
-- feed responses now include enough social metadata for frontend follow/like/comment UI without a second round-trip for summary state
+- feed responses include social metadata needed by the frontend without a second round-trip for summary state
+- feed supports two scopes:
+  - `for-you` for broader recent activity
+  - `following` for followed users + current user
 
 ---
 
@@ -421,6 +420,10 @@ This is only intended for local development/testing.
 
 ### Feed
 - `GET /api/feed`
+- optional query params:
+  - `scope=for-you`
+  - `scope=following`
+  - `take=<n>`
 
 ### AI (stub)
 - `POST /api/ai/recommendations`
@@ -450,6 +453,7 @@ Current automated coverage includes:
 - feed service tests
 - feed unauthorized route tests
 - authenticated feed flow tests
+- feed scope coverage for **For You** and **Following**
 - profile service tests
 - authenticated profile flow tests
 - game service tests

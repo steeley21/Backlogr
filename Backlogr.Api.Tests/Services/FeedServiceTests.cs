@@ -11,7 +11,7 @@ namespace Backlogr.Api.Tests.Services;
 public sealed class FeedServiceTests
 {
     [Fact]
-    public async Task GetFeedAsync_ShouldReturnEmpty_WhenUserHasNoActivityAndFollowsNoOne()
+    public async Task GetFeedAsync_ShouldReturnEmpty_WhenFollowingScopeHasNoActivityAndFollowsNoOne()
     {
         var dbContext = CreateDbContext();
 
@@ -21,13 +21,89 @@ public sealed class FeedServiceTests
 
         var service = new FeedService(dbContext);
 
-        var result = await service.GetFeedAsync(user.Id);
+        var result = await service.GetFeedAsync(user.Id, FeedScope.Following);
 
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetFeedAsync_ShouldReturnLogsAndReviews_FromFollowedUsersOnly_WithSocialFields()
+    public async Task GetFeedAsync_ShouldReturnAllUsersActivity_WhenScopeIsForYou()
+    {
+        var dbContext = CreateDbContext();
+
+        var currentUser = CreateUser("current_user", "current_user@example.com", "Current User");
+        var followedUser = CreateUser("followed_user", "followed_user@example.com", "Followed User");
+        var otherUser = CreateUser("other_user", "other_user@example.com", "Other User");
+
+        var game1 = CreateGame("Followed Game");
+        var game2 = CreateGame("Other Game");
+        var game3 = CreateGame("Current User Game");
+
+        dbContext.Users.AddRange(currentUser, followedUser, otherUser);
+        dbContext.Games.AddRange(game1, game2, game3);
+
+        dbContext.Follows.Add(new Follow
+        {
+            FollowId = Guid.NewGuid(),
+            FollowerId = currentUser.Id,
+            FollowingId = followedUser.Id,
+            CreatedAt = DateTime.UtcNow,
+            Follower = currentUser,
+            Following = followedUser
+        });
+
+        dbContext.GameLogs.Add(new GameLog
+        {
+            GameLogId = Guid.NewGuid(),
+            UserId = followedUser.Id,
+            GameId = game1.GameId,
+            Status = LibraryStatus.Playing,
+            UpdatedAt = new DateTime(2026, 3, 13, 10, 0, 0, DateTimeKind.Utc),
+            User = followedUser,
+            Game = game1
+        });
+
+        dbContext.GameLogs.Add(new GameLog
+        {
+            GameLogId = Guid.NewGuid(),
+            UserId = otherUser.Id,
+            GameId = game2.GameId,
+            Status = LibraryStatus.Backlog,
+            UpdatedAt = new DateTime(2026, 3, 13, 11, 0, 0, DateTimeKind.Utc),
+            User = otherUser,
+            Game = game2
+        });
+
+        dbContext.Reviews.Add(new Review
+        {
+            ReviewId = Guid.NewGuid(),
+            UserId = currentUser.Id,
+            GameId = game3.GameId,
+            Text = "My own review",
+            HasSpoilers = false,
+            CreatedAt = new DateTime(2026, 3, 13, 9, 0, 0, DateTimeKind.Utc),
+            UpdatedAt = new DateTime(2026, 3, 13, 12, 0, 0, DateTimeKind.Utc),
+            User = currentUser,
+            Game = game3
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        var service = new FeedService(dbContext);
+
+        var result = await service.GetFeedAsync(currentUser.Id, FeedScope.ForYou);
+
+        result.Should().HaveCount(3);
+        result.Select(item => item.UserId).Should().Contain(new[]
+        {
+            currentUser.Id,
+            followedUser.Id,
+            otherUser.Id
+        });
+    }
+
+    [Fact]
+    public async Task GetFeedAsync_ShouldReturnFollowedUsersAndCurrentUserActivity_WhenScopeIsFollowing()
     {
         var dbContext = CreateDbContext();
 
@@ -37,9 +113,10 @@ public sealed class FeedServiceTests
 
         var game1 = CreateGame("Followed Game");
         var game2 = CreateGame("Other Game");
+        var game3 = CreateGame("Current User Game");
 
         dbContext.Users.AddRange(currentUser, followedUser, otherUser);
-        dbContext.Games.AddRange(game1, game2);
+        dbContext.Games.AddRange(game1, game2, game3);
 
         dbContext.Follows.Add(new Follow
         {
@@ -80,6 +157,30 @@ public sealed class FeedServiceTests
         };
         dbContext.Reviews.Add(followedReview);
 
+        dbContext.Reviews.Add(new Review
+        {
+            ReviewId = Guid.NewGuid(),
+            UserId = currentUser.Id,
+            GameId = game3.GameId,
+            Text = "My own review",
+            HasSpoilers = false,
+            CreatedAt = new DateTime(2026, 3, 13, 9, 0, 0, DateTimeKind.Utc),
+            UpdatedAt = new DateTime(2026, 3, 13, 14, 0, 0, DateTimeKind.Utc),
+            User = currentUser,
+            Game = game3
+        });
+
+        dbContext.GameLogs.Add(new GameLog
+        {
+            GameLogId = Guid.NewGuid(),
+            UserId = otherUser.Id,
+            GameId = game2.GameId,
+            Status = LibraryStatus.Backlog,
+            UpdatedAt = new DateTime(2026, 3, 13, 15, 0, 0, DateTimeKind.Utc),
+            User = otherUser,
+            Game = game2
+        });
+
         dbContext.ReviewLikes.Add(new ReviewLike
         {
             ReviewLikeId = Guid.NewGuid(),
@@ -101,42 +202,36 @@ public sealed class FeedServiceTests
             Review = followedReview
         });
 
-        dbContext.GameLogs.Add(new GameLog
-        {
-            GameLogId = Guid.NewGuid(),
-            UserId = otherUser.Id,
-            GameId = game2.GameId,
-            Status = LibraryStatus.Backlog,
-            UpdatedAt = new DateTime(2026, 3, 13, 14, 0, 0, DateTimeKind.Utc),
-            User = otherUser,
-            Game = game2
-        });
-
         await dbContext.SaveChangesAsync();
 
         var service = new FeedService(dbContext);
 
-        var result = await service.GetFeedAsync(currentUser.Id);
+        var result = await service.GetFeedAsync(currentUser.Id, FeedScope.Following);
 
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(item => item.UserId == followedUser.Id);
-        result[0].ItemType.Should().Be(FeedItemType.Review);
-        result[0].GameTitle.Should().Be("Followed Game");
-        result[0].AvatarUrl.Should().Be("https://example.com/followed-user.png");
-        result[0].LikeCount.Should().Be(1);
-        result[0].CommentCount.Should().Be(1);
-        result[0].LikedByCurrentUser.Should().BeTrue();
-        result[0].IsOwner.Should().BeFalse();
-        result[1].ItemType.Should().Be(FeedItemType.GameLog);
-        result[1].AvatarUrl.Should().Be("https://example.com/followed-user.png");
-        result[1].LikeCount.Should().Be(0);
-        result[1].CommentCount.Should().Be(0);
-        result[1].LikedByCurrentUser.Should().BeFalse();
-        result[1].IsOwner.Should().BeFalse();
+        result.Should().HaveCount(3);
+        result.Should().OnlyContain(item => item.UserId == currentUser.Id || item.UserId == followedUser.Id);
+        result.Should().NotContain(item => item.UserId == otherUser.Id);
+
+        result[0].UserId.Should().Be(currentUser.Id);
+        result[0].IsOwner.Should().BeTrue();
+
+        var followedReviewItem = result.Single(item => item.ItemType == FeedItemType.Review && item.UserId == followedUser.Id);
+        followedReviewItem.AvatarUrl.Should().Be("https://example.com/followed-user.png");
+        followedReviewItem.LikeCount.Should().Be(1);
+        followedReviewItem.CommentCount.Should().Be(1);
+        followedReviewItem.LikedByCurrentUser.Should().BeTrue();
+        followedReviewItem.IsOwner.Should().BeFalse();
+
+        var followedLogItem = result.Single(item => item.ItemType == FeedItemType.GameLog && item.UserId == followedUser.Id);
+        followedLogItem.AvatarUrl.Should().Be("https://example.com/followed-user.png");
+        followedLogItem.LikeCount.Should().Be(0);
+        followedLogItem.CommentCount.Should().Be(0);
+        followedLogItem.LikedByCurrentUser.Should().BeFalse();
+        followedLogItem.IsOwner.Should().BeFalse();
     }
 
     [Fact]
-    public async Task GetFeedAsync_ShouldIncludeCurrentUsersOwnActivity_AndMarkOwner()
+    public async Task GetFeedAsync_ShouldIncludeCurrentUsersOwnActivity_AndMarkOwner_InFollowingScope()
     {
         var dbContext = CreateDbContext();
 
@@ -162,7 +257,7 @@ public sealed class FeedServiceTests
 
         var service = new FeedService(dbContext);
 
-        var result = await service.GetFeedAsync(currentUser.Id);
+        var result = await service.GetFeedAsync(currentUser.Id, FeedScope.Following);
 
         result.Should().ContainSingle();
         result[0].UserId.Should().Be(currentUser.Id);
@@ -177,20 +272,11 @@ public sealed class FeedServiceTests
 
         var currentUser = CreateUser("take_user", "take_user@example.com", "Take User");
         var followedUser = CreateUser("take_followed", "take_followed@example.com", "Take Followed");
+        var otherUser = CreateUser("take_other", "take_other@example.com", "Take Other");
         var game = CreateGame("Take Game");
 
-        dbContext.Users.AddRange(currentUser, followedUser);
+        dbContext.Users.AddRange(currentUser, followedUser, otherUser);
         dbContext.Games.Add(game);
-
-        dbContext.Follows.Add(new Follow
-        {
-            FollowId = Guid.NewGuid(),
-            FollowerId = currentUser.Id,
-            FollowingId = followedUser.Id,
-            CreatedAt = DateTime.UtcNow,
-            Follower = currentUser,
-            Following = followedUser
-        });
 
         dbContext.GameLogs.AddRange(
             new GameLog
@@ -217,13 +303,13 @@ public sealed class FeedServiceTests
         dbContext.Reviews.Add(new Review
         {
             ReviewId = Guid.NewGuid(),
-            UserId = followedUser.Id,
+            UserId = otherUser.Id,
             GameId = game.GameId,
             Text = "Latest review",
             HasSpoilers = false,
             CreatedAt = new DateTime(2026, 3, 13, 9, 0, 0, DateTimeKind.Utc),
             UpdatedAt = new DateTime(2026, 3, 13, 12, 0, 0, DateTimeKind.Utc),
-            User = followedUser,
+            User = otherUser,
             Game = game
         });
 
@@ -231,7 +317,7 @@ public sealed class FeedServiceTests
 
         var service = new FeedService(dbContext);
 
-        var result = await service.GetFeedAsync(currentUser.Id, take: 2);
+        var result = await service.GetFeedAsync(currentUser.Id, FeedScope.ForYou, take: 2);
 
         result.Should().HaveCount(2);
         result[0].ActivityAt.Should().BeAfter(result[1].ActivityAt);

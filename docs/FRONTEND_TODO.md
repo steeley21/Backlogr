@@ -1,8 +1,8 @@
 # FRONTEND_TODO — Backlogr.Web
 
-Last updated: 2026-03-14
+Last updated: 2026-03-17
 
-This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, plus the member-profile/feed-social feature pass and the first Vitest test pass.
+This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, and the new **For You / Following** feed split with updated Vitest coverage.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -27,7 +27,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Frontend can reach deployed API successfully
 - [x] Browse is backed by the live merged catalog/search flow
 
-### Recent codebase additions ready for deploy/smoke test
+### Latest local codebase additions ready for next deploy / smoke test
 - [x] Public landing page at `/`
 - [x] Authenticated feed moved to `/feed`
 - [x] Admin dashboard route and role-gated navigation
@@ -37,15 +37,18 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Follow / unfollow UI
 - [x] Review edit / delete UI from feed cards
 - [x] Feed like / comment UI
-- [x] Frontend test harness and first coverage pass
+- [x] Feed source tabs: **For You** and **Following**
+- [x] Route-query persistence for the selected feed tab
+- [x] Feed page Vitest coverage for tab behavior
 
 ### Current known limitations
 - [x] Member profile route is built
 - [x] Follow/unfollow UI is built
 - [x] Review edit/delete UI is built
 - [x] Feed like/comment UI is built
+- [x] Feed split UI is built locally and covered by tests
 - [ ] Semantic search UI is not built yet
-- [ ] Frontend test coverage is still partial beyond the first pass
+- [ ] Frontend test coverage is still partial beyond the current covered slices
 - [ ] Member profiles are still authenticated routes rather than signed-out public pages
 
 ---
@@ -116,7 +119,9 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 
 ### Feed
 - [x] Replace mock feed data with live API call
-- [x] Show current user activity + followed-user activity (backend supports this)
+- [x] Support **For You** and **Following** feed tabs
+- [x] Preserve selected feed tab in the route query
+- [x] Keep `All / Reviews / Logs` as a secondary local filter
 - [x] Loading / empty / error states
 - [x] Like review UI wiring
 - [x] Comments UI wiring
@@ -208,6 +213,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Unlike review action
 - [x] Add comment flow
 - [x] Delete own comment flow
+- [x] For You / Following feed split
 - [ ] Any richer comment-thread moderation/pagination beyond the lightweight inline thread
 
 ---
@@ -235,7 +241,7 @@ Current search decisions:
 - [ ] Add a broader shared toast/snackbar pattern across the rest of the app
 - [ ] Tighten form validation / messaging on log + auth pages
 - [ ] Accessibility pass (labels, keyboard flow, aria polish)
-- [ ] Mobile UX pass after deployment verification
+- [ ] Mobile UX pass after next deploy verification
 
 ---
 
@@ -263,7 +269,7 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [ ] Auth pages
 - [x] Feed review card interactions
 - [x] Feed comment thread interactions
-- [ ] Feed page render as a whole
+- [x] Feed page render + tab behavior
 - [ ] Browse click/import flow
 - [ ] Log form validation
 - [ ] Recommend page render
@@ -275,26 +281,23 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ## 8) Deployment readiness checklist (frontend side)
 
-- [ ] Rebuild and deploy frontend with the latest member-profile/feed-social changes
-- [ ] Smoke test `/`, `/feed`, `/u/[username]`, `/admin`, and `/profile` against production API
+- [ ] Rebuild and deploy frontend with the latest feed-tab changes
+- [ ] Smoke test `/`, `/feed?tab=for-you`, `/feed?tab=following`, `/u/[username]`, `/admin`, and `/profile` against production API
+- [ ] Verify feed tab state persists after refresh/navigation in production
 - [ ] Verify follow/unfollow behavior in production
 - [ ] Verify feed like/comment/edit/delete behavior in production
 - [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production
 - [ ] Verify delete-account redirect/logout flow in production
 
-
 ---
 
 ## Next UI / UX Enhancements
 
-### Feed tabs: For You vs Following
-- Add a two-tab feed experience:
-  - **For You**: show all recent activity
-  - **Following**: show only activity from followed users
-- Update the feed page UI to support tab switching without a full page reload
-- Preserve the selected feed tab in the route query or local state
-- Show an empty state for the Following feed when the user is not following anyone yet
-- Reuse the existing feed cards for both feed variants to avoid duplicate UI logic
+### Feed polish after the tab split
+- Improve the visual separation between the feed-source tabs and the local `All / Reviews / Logs` filter
+- Evaluate whether a lightweight feed snapshot or feed-type count row should become interactive
+- Add paging or incremental loading once the feed gets larger
+- Revisit the empty-state copy after production smoke testing with real user data
 
 ### Visual polish / motion pass
 - Explore adding tasteful visual enhancements inspired by **React Bits**
@@ -307,10 +310,11 @@ Requirement: “Unit tests cover core functionality for the front end and back e
   - page section transitions
 - Verify that any new animation or interaction still performs well on mobile
 
+---
 
 ## DevOps / CI Improvements
 
-### Speed up Static Web App workflow 
+### Speed up Static Web App workflow
 - Review the Azure Static Web Apps GitHub Actions workflow for unnecessary wait time
 - Investigate why the most recent frontend deploy took ~17 minutes
 - Check for opportunities to improve:

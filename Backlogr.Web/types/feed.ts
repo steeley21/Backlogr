@@ -1,6 +1,7 @@
 // /types/feed.ts
 export type GameStatus = 'Playing' | 'Played' | 'Backlog' | 'Wishlist' | 'Dropped'
 export type FeedItemType = 'GameLog' | 'Review'
+export type FeedScope = 'for-you' | 'following'
 
 export interface UserSummary {
   userId: string

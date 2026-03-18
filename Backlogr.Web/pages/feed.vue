@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AiCalloutCard from '~/components/feed/AiCalloutCard.vue'
 import FeedLogCard from '~/components/feed/FeedLogCard.vue'
 import FeedReviewCard from '~/components/feed/FeedReviewCard.vue'
 import { getFeed } from '~/services/feedService'
 import { useAuthStore } from '~/stores/auth'
-import type { FeedItem, FeedReviewItem } from '~/types/feed'
+import type { FeedItem, FeedReviewItem, FeedScope } from '~/types/feed'
 import type { ReviewResponseDto } from '~/types/review'
 import { getApiErrorMessage } from '~/utils/apiError'
 
@@ -13,8 +14,11 @@ type FeedFilter = 'all' | 'reviews' | 'logs'
 type SnackbarColor = 'success' | 'error'
 
 const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
 const filter = ref<FeedFilter>('all')
+const activeTab = ref<FeedScope>('for-you')
 const feedItems = ref<FeedItem[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -26,6 +30,50 @@ const snackbar = ref({
 
 const displayName = computed(() => {
   return authStore.displayName || authStore.userName || 'there'
+})
+
+const tabLabel = computed(() => {
+  return activeTab.value === 'for-you' ? 'For You' : 'Following'
+})
+
+const tabIcon = computed(() => {
+  return activeTab.value === 'for-you' ? 'mdi-earth' : 'mdi-account-group'
+})
+
+const heroOverline = computed(() => {
+  return activeTab.value === 'for-you' ? 'DISCOVER ACTIVITY' : 'FOLLOWING ACTIVITY'
+})
+
+const heroSubtitle = computed(() => {
+  if (activeTab.value === 'for-you') {
+    return 'See the latest logs and reviews from across Backlogr, including your own activity.'
+  }
+
+  return 'Stay caught up with people you follow, while keeping your own recent logs and reviews in the mix.'
+})
+
+const emptyTitle = computed(() => {
+  if (activeTab.value === 'for-you') {
+    return 'The For You feed is quiet right now'
+  }
+
+  return 'The Following feed is quiet right now'
+})
+
+const emptyMessage = computed(() => {
+  if (activeTab.value === 'for-you') {
+    return 'Once members start logging games and posting reviews, you’ll see the latest activity here.'
+  }
+
+  return 'Log a game or write a review to see your own activity here. As you follow more members, their activity will appear too.'
+})
+
+const infoCopy = computed(() => {
+  if (activeTab.value === 'for-you') {
+    return 'For You shows the latest activity across the platform, so you can discover new reviews, logs, and members to follow.'
+  }
+
+  return 'Following narrows the feed to activity from people you follow, while still keeping your own recent posts visible.'
 })
 
 const visibleItems = computed(() => {
@@ -69,20 +117,71 @@ function sortFeedItems(items: FeedItem[]): FeedItem[] {
   })
 }
 
+function getRouteTabValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0]
+  }
+
+  return undefined
+}
+
+function isFeedScope(value: unknown): value is FeedScope {
+  return value === 'for-you' || value === 'following'
+}
+
+function parseFeedTab(value: unknown): FeedScope {
+  const tab = getRouteTabValue(value)
+
+  if (tab === 'following') {
+    return 'following'
+  }
+
+  return 'for-you'
+}
+
+async function replaceTabQuery(tab: FeedScope): Promise<void> {
+  await router.replace({
+    query: {
+      ...route.query,
+      tab,
+    },
+  })
+}
+
 async function loadFeed(): Promise<void> {
   isLoading.value = true
   errorMessage.value = ''
 
   try {
-    feedItems.value = await getFeed(25)
+    feedItems.value = await getFeed({
+      take: 25,
+      scope: activeTab.value,
+    })
   }
   catch (error: unknown) {
     feedItems.value = []
-    errorMessage.value = getApiErrorMessage(error, 'Unable to load your feed right now. Please try again.')
+
+    const fallbackMessage = activeTab.value === 'for-you'
+      ? 'Unable to load the For You feed right now. Please try again.'
+      : 'Unable to load the Following feed right now. Please try again.'
+
+    errorMessage.value = getApiErrorMessage(error, fallbackMessage)
   }
   finally {
     isLoading.value = false
   }
+}
+
+async function handleTabChange(value: unknown): Promise<void> {
+  if (!isFeedScope(value) || value === activeTab.value) {
+    return
+  }
+
+  await replaceTabQuery(value)
 }
 
 function handleReviewUpdated(updatedReview: ReviewResponseDto): void {
@@ -110,9 +209,23 @@ function handleReviewDeleted(reviewId: string): void {
   showSnackbar('Review deleted.', 'success')
 }
 
-onMounted(async () => {
-  await loadFeed()
-})
+watch(
+  () => route.query.tab,
+  async (routeTabValue) => {
+    const rawTab = getRouteTabValue(routeTabValue)
+    const normalizedTab = parseFeedTab(routeTabValue)
+
+    activeTab.value = normalizedTab
+
+    if (rawTab !== normalizedTab) {
+      await replaceTabQuery(normalizedTab)
+      return
+    }
+
+    await loadFeed()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -121,10 +234,10 @@ onMounted(async () => {
       <div class="hero-overlay" />
 
       <div class="hero-inner">
-        <div class="overline">YOUR ACTIVITY</div>
+        <div class="overline">{{ heroOverline }}</div>
         <div class="hero-title">Welcome back, {{ displayName }}</div>
         <div class="hero-sub muted">
-          Your feed includes your own latest logs and reviews, plus activity from people you follow.
+          {{ heroSubtitle }}
         </div>
 
         <div class="hero-actions">
@@ -143,8 +256,8 @@ onMounted(async () => {
       <v-col cols="12" md="8" class="feed-col">
         <div class="section-head">
           <div class="title">
-            <v-icon icon="mdi-account-group" color="primary" size="20" />
-            <span>Your Feed</span>
+            <v-icon :icon="tabIcon" color="primary" size="20" />
+            <span>{{ tabLabel }} Feed</span>
           </div>
 
           <div class="section-actions">
@@ -158,6 +271,18 @@ onMounted(async () => {
             >
               Refresh
             </v-btn>
+
+            <v-btn-toggle
+              :model-value="activeTab"
+              mandatory
+              density="comfortable"
+              rounded="pill"
+              class="filter"
+              @update:model-value="handleTabChange"
+            >
+              <v-btn value="for-you" class="text-none">For You</v-btn>
+              <v-btn value="following" class="text-none">Following</v-btn>
+            </v-btn-toggle>
 
             <v-btn-toggle v-model="filter" mandatory density="comfortable" rounded="pill" class="filter">
               <v-btn value="all" class="text-none">All</v-btn>
@@ -192,9 +317,9 @@ onMounted(async () => {
           rounded="xl"
           flat
         >
-          <div class="text-h6 font-weight-bold mb-2">Your feed is quiet right now</div>
+          <div class="text-h6 font-weight-bold mb-2">{{ emptyTitle }}</div>
           <div class="muted mb-4">
-            Log a game or write a review to see your own activity here. When you follow other members, their activity will appear too.
+            {{ emptyMessage }}
           </div>
 
           <div class="d-flex ga-3 flex-wrap">
@@ -255,12 +380,12 @@ onMounted(async () => {
           <div class="section-head compact">
             <div class="title">
               <v-icon icon="mdi-information-outline" color="primary" size="20" />
-              <span>How the feed works</span>
+              <span>How this tab works</span>
             </div>
           </div>
 
           <div class="muted info-copy">
-            You’ll see your own recent activity here first. As you follow other members, their logs and reviews will be mixed into the same timeline.
+            {{ infoCopy }}
           </div>
         </v-card>
       </v-col>
