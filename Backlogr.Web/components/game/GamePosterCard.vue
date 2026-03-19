@@ -79,7 +79,7 @@ function handleClick(): void {
 
 <style scoped>
 .card {
-  background: var(--card);
+  background: transparent;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius) !important;
   overflow: hidden;
@@ -123,16 +123,28 @@ function handleClick(): void {
 .cover {
   position: relative;
   aspect-ratio: 2 / 3;
-  margin: 0;
-  border-radius: var(--radius);
+  width: 100%;
+  display: block;
   overflow: hidden;
-  border: none;
+  border-radius: 0;
+}
+
+/* Force v-img to fill the cover exactly */
+.cover :deep(.v-img) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cover :deep(.v-img__img) {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
 
 .cover-glow {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
   background: radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.22), transparent 65%);
   opacity: 0;
   transition: opacity 300ms ease;
