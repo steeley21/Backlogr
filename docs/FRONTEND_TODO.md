@@ -1,8 +1,8 @@
 # FRONTEND_TODO — Backlogr.Web
 
-Last updated: 2026-03-17
+Last updated: 2026-03-18
 
-This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, and the new **For You / Following** feed split with updated Vitest coverage.
+This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, the new **For You / Following** feed split, and the AI/frontend wiring pass for browse semantic search and live recommendation/review-assistant flows.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -40,6 +40,11 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed source tabs: **For You** and **Following**
 - [x] Route-query persistence for the selected feed tab
 - [x] Feed page Vitest coverage for tab behavior
+- [x] Browse page semantic-search mode + dedicated search panel
+- [x] AI Picks page copy updated for live recommendations
+- [x] Log page review-assistant UX polish
+- [x] Browse page Vitest coverage
+- [x] Recommend page Vitest coverage
 
 ### Current known limitations
 - [x] Member profile route is built
@@ -47,7 +52,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Review edit/delete UI is built
 - [x] Feed like/comment UI is built
 - [x] Feed split UI is built locally and covered by tests
-- [ ] Semantic search UI is not built yet
+- [x] Semantic search UI is built
 - [ ] Frontend test coverage is still partial beyond the current covered slices
 - [ ] Member profiles are still authenticated routes rather than signed-out public pages
 
@@ -158,13 +163,15 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Deployment-safe local fallback posters
 - [x] Automatic import-on-click flow for non-local results
 - [x] Route imported result to local `/game/:id`
+- [x] Semantic search toggle / UI
+- [x] Dedicated browse-page search input / semantic examples
 - [ ] Paging
-- [ ] Semantic search toggle / UI
 
 ### AI Picks
-- [x] Recommendations page wired to API stub
+- [x] Recommendations page wired to live API
 - [x] Refresh flow
 - [x] Take/count selection
+- [x] Recommendation copy updated away from stub language
 - [ ] Save-to-backlog CTA per recommendation
 
 ### Profile / member-social
@@ -226,9 +233,9 @@ Current search decisions:
 - Missing local results can be imported behind the scenes through the current browse flow
 
 ### Remaining frontend tasks
-- [ ] Add semantic search UI for `GET /api/ai/semantic-search`
 - [ ] Add optional browse/result polish for larger catalogs
 - [ ] Decide whether any explicit “import management” UI is needed for admin/demo purposes
+- [ ] Consider richer result context for semantic results (why/score chips, badges, or helper text)
 
 ---
 
@@ -272,7 +279,8 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [x] Feed page render + tab behavior
 - [ ] Browse click/import flow
 - [ ] Log form validation
-- [ ] Recommend page render
+- [x] Recommend page render
+- [x] Browse page semantic-mode render
 - [x] Member profile page (`/u/[username]`)
 - [ ] Admin dashboard permissions + dialog flows
 - [ ] Profile delete-account flow
@@ -281,9 +289,12 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ## 8) Deployment readiness checklist (frontend side)
 
-- [ ] Rebuild and deploy frontend with the latest feed-tab changes
-- [ ] Smoke test `/`, `/feed?tab=for-you`, `/feed?tab=following`, `/u/[username]`, `/admin`, and `/profile` against production API
+- [ ] Rebuild and deploy frontend with the latest AI/browse updates
+- [ ] Smoke test `/`, `/feed?tab=for-you`, `/feed?tab=following`, `/browse`, `/recommend`, `/log?gameId=...`, `/u/[username]`, `/admin`, and `/profile` against production API
 - [ ] Verify feed tab state persists after refresh/navigation in production
+- [ ] Verify semantic search mode works in production browse
+- [ ] Verify recommendation page returns live recommendations in production
+- [ ] Verify review-assistant actions work from the log page in production
 - [ ] Verify follow/unfollow behavior in production
 - [ ] Verify feed like/comment/edit/delete behavior in production
 - [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production

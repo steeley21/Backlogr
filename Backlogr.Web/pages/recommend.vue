@@ -21,6 +21,14 @@ const headerRightText = computed(() => {
   return 'Personalized recommendations'
 })
 
+const introText = computed(() => {
+  return 'These picks are based on your logged games, ratings, and review themes.'
+})
+
+const emptyStateText = computed(() => {
+  return 'Log, rate, or review a few games to help Backlogr understand your taste and generate stronger recommendations.'
+})
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
     const apiMessage = error.response?.data
@@ -72,7 +80,7 @@ onMounted(async () => {
         <div>
           <div class="text-h6 font-weight-semibold mb-1">Recommendations for you</div>
           <div class="muted">
-            These are coming from the current recommendation stub and will get smarter once the full AI pipeline is connected.
+            {{ introText }}
           </div>
         </div>
 
@@ -100,6 +108,15 @@ onMounted(async () => {
           </v-btn>
         </div>
       </div>
+
+      <v-alert
+        type="info"
+        variant="tonal"
+        rounded="lg"
+        class="mt-4"
+      >
+        Better logs lead to better picks. Add ratings and reviews to improve recommendation quality.
+      </v-alert>
     </v-card>
 
     <v-alert
@@ -132,13 +149,34 @@ onMounted(async () => {
       flat
     >
       <div class="text-h6 font-weight-bold mb-2">No recommendations yet</div>
-      <div class="muted">
-        Once the recommendation service has data to work with, your picks will appear here.
+      <div class="muted mb-4">
+        {{ emptyStateText }}
+      </div>
+
+      <div class="d-flex ga-3 flex-wrap">
+        <v-btn
+          to="/browse"
+          color="primary"
+          rounded="pill"
+          class="text-none px-6"
+        >
+          Browse games
+        </v-btn>
+
+        <v-btn
+          to="/library"
+          variant="text"
+          rounded="pill"
+          class="text-none"
+        >
+          Go to library
+        </v-btn>
       </div>
     </v-card>
 
     <div v-else class="mt-5">
       <SectionHeader icon="mdi-star" title="Recommended for you" />
+
       <v-row dense>
         <v-col
           v-for="game in recs"

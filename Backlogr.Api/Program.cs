@@ -1,6 +1,3 @@
-using System;
-using System.Text;
-using System.Text.Json.Serialization;
 using Backlogr.Api.Data;
 using Backlogr.Api.Extensions;
 using Backlogr.Api.Models.Entities;
@@ -13,6 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,35 @@ builder.Services.AddOptions<IgdbOptions>()
     .Validate(
         options => !string.IsNullOrWhiteSpace(options.ClientSecret),
         "Igdb:ClientSecret is required.")
+    .ValidateOnStart();
+
+builder.Services.AddOptions<OpenAiOptions>()
+    .Bind(builder.Configuration.GetSection(OpenAiOptions.SectionName))
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ApiKey),
+        "OpenAI:ApiKey is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ChatModel),
+        "OpenAI:ChatModel is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.EmbeddingModel),
+        "OpenAI:EmbeddingModel is required.")
+    .ValidateOnStart();
+
+builder.Services.AddOptions<AzureAiSearchOptions>()
+    .Bind(builder.Configuration.GetSection(AzureAiSearchOptions.SectionName))
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.Endpoint),
+        "AzureAiSearch:Endpoint is required.")
+    .Validate(
+        options => Uri.TryCreate(options.Endpoint, UriKind.Absolute, out _),
+        "AzureAiSearch:Endpoint must be a valid absolute URI.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ApiKey),
+        "AzureAiSearch:ApiKey is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.GamesIndexName),
+        "AzureAiSearch:GamesIndexName is required.")
     .ValidateOnStart();
 
 builder.Services.AddControllers()
@@ -151,6 +181,10 @@ builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
 builder.Services.AddScoped<ISuperAdminBootstrapService, SuperAdminBootstrapService>();
+builder.Services.AddScoped<IAiSearchSyncService, AiSearchSyncService>();
+
+builder.Services.AddSingleton<IEmbeddingService, OpenAiEmbeddingService>();
+builder.Services.AddSingleton<IAiSearchIndexService, AzureAiSearchIndexService>();
 
 builder.Services.AddHttpClient<ITwitchTokenService, TwitchTokenService>(httpClient =>
 {
@@ -165,9 +199,19 @@ builder.Services.AddHttpClient<IIgdbService, IgdbService>((serviceProvider, http
     httpClient.Timeout = TimeSpan.FromSeconds(20);
 });
 
-builder.Services.AddScoped<IRecommendationService, StubRecommendationService>();
-builder.Services.AddScoped<IReviewAssistantService, StubReviewAssistantService>();
-builder.Services.AddScoped<ISemanticSearchService, StubSemanticSearchService>();
+builder.Services.AddScoped<IRecommendationService, AzureRecommendationService>();
+builder.Services.AddScoped<ISemanticSearchService, AzureSemanticSearchService>();
+
+builder.Services.AddHttpClient<IReviewAssistantService, OpenAiReviewAssistantService>(
+    (serviceProvider, httpClient) =>
+    {
+        var openAiOptions = serviceProvider.GetRequiredService<IOptions<OpenAiOptions>>().Value;
+
+        httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", openAiOptions.ApiKey);
+        httpClient.Timeout = TimeSpan.FromSeconds(30);
+    });
 
 var app = builder.Build();
 
@@ -177,6 +221,15 @@ if (app.Environment.IsDevelopment())
 {
     await DevelopmentDataSeeder.SeedTestGameAsync(app.Services);
     await DevelopmentAdminSeeder.SeedAdminAsync(app.Services, app.Configuration);
+}
+
+var runAiBackfillOnStartup = app.Configuration.GetValue<bool>("AiSearch:RunBackfillOnStartup");
+
+if (runAiBackfillOnStartup)
+{
+    using var scope = app.Services.CreateScope();
+    var aiSearchSyncService = scope.ServiceProvider.GetRequiredService<IAiSearchSyncService>();
+    await aiSearchSyncService.BackfillGamesAsync();
 }
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))

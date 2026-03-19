@@ -30,7 +30,18 @@ public class BacklogrApiFactory : WebApplicationFactory<Program>
                 ["Igdb:ClientId"] = "test-client-id",
                 ["Igdb:ClientSecret"] = "test-client-secret",
                 ["Igdb:ApiBaseUrl"] = "https://example.test",
-                ["Cors:AllowedOrigins:0"] = "http://localhost"
+                ["Cors:AllowedOrigins:0"] = "http://localhost",
+
+                // Keep AI option validation happy in tests without using real external services.
+                ["OpenAI:ApiKey"] = "test-openai-api-key",
+                ["OpenAI:ChatModel"] = "gpt-test",
+                ["OpenAI:EmbeddingModel"] = "text-embedding-test",
+                ["AzureAiSearch:Endpoint"] = "https://example.search.windows.net",
+                ["AzureAiSearch:ApiKey"] = "test-azure-search-api-key",
+                ["AzureAiSearch:GamesIndexName"] = "games-test",
+
+                // Prevent startup backfill from trying to run real indexing logic during tests.
+                ["AiSearch:RunBackfillOnStartup"] = "false"
             };
 
             configBuilder.AddInMemoryCollection(testConfig);
@@ -41,7 +52,12 @@ public class BacklogrApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.RemoveAll<ApplicationDbContext>();
+
             services.RemoveAll<IIgdbService>();
+
+            services.RemoveAll<IRecommendationService>();
+            services.RemoveAll<IReviewAssistantService>();
+            services.RemoveAll<ISemanticSearchService>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -49,6 +65,10 @@ public class BacklogrApiFactory : WebApplicationFactory<Program>
             });
 
             services.AddScoped<IIgdbService, StubIgdbService>();
+
+            services.AddScoped<IRecommendationService, FakeRecommendationService>();
+            services.AddScoped<IReviewAssistantService, FakeReviewAssistantService>();
+            services.AddScoped<ISemanticSearchService, FakeSemanticSearchService>();
         });
     }
 }

@@ -1,8 +1,8 @@
 # BACKEND_TODO — Backlogr.Api
 
-Last updated: 2026-03-17
+Last updated: 2026-03-18
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, and the new **For You / Following** feed scope split.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, the **For You / Following** feed scope split, and the local AI/vector-search integration pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -43,10 +43,16 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed scope support added for **For You** vs **Following**
 - [x] Feed tests updated to cover both scopes
 - [x] Temporary one-time `SuperAdmin` bootstrap path added and can be disabled after use
+- [x] OpenAI configuration/options added for chat + embeddings
+- [x] Azure AI Search configuration/options added for vector search
+- [x] AI search index creation/backfill added on startup
+- [x] Real semantic search service wired to Azure AI Search
+- [x] Real recommendation service wired to the user's own logs/ratings/reviews
+- [x] Real review-assistant service wired to OpenAI
 
 ### Important scope note
 - [x] Keep current feature status conservative
-- [x] Do not treat incomplete AI/vector-search work as complete just because deployment is working
+- [x] Distinguish between deployed production status and newer local AI/vector-search work that still needs a production smoke test
 
 ---
 
@@ -154,18 +160,24 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed includes avatar, counts, liked-state, and owner-state fields
 - [x] Invalid feed scopes return `400 Bad Request`
 
-### AI stubs
+### AI / vector search
 - [x] `IRecommendationService`
 - [x] `IReviewAssistantService`
-- [ ] `IEmbeddingService`
+- [x] `IEmbeddingService`
+- [x] `IAiSearchIndexService`
+- [x] `IAiSearchSyncService`
 - [x] `ISemanticSearchService`
-- [x] `StubRecommendationService`
-- [x] `StubReviewAssistantService`
-- [x] `StubSemanticSearchService`
+- [x] `OpenAiEmbeddingService`
+- [x] `AzureAiSearchIndexService`
+- [x] `AiSearchSyncService`
+- [x] `AzureRecommendationService`
+- [x] `OpenAiReviewAssistantService`
+- [x] `AzureSemanticSearchService`
 - [x] `AiController`
 - [x] `POST /api/ai/recommendations`
 - [x] `POST /api/ai/review-assistant`
 - [x] `GET /api/ai/semantic-search`
+- [x] Azure AI Search `games` index/backfill path
 
 ---
 
@@ -207,7 +219,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Member profile query rules
 - [x] Game search/detail rules
 - [x] IGDB search/import flow rules
-- [x] AI stub behavior rules
+- [ ] Expand automated coverage for the new real AI/vector-search behavior
 
 ### Controller / integration tests
 - [x] Validation error status codes
@@ -255,6 +267,10 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Verify `GET /api/feed?scope=for-you` returns the broader feed in production
 - [ ] Verify `GET /api/feed?scope=following` returns followed-user + self activity in production
 - [ ] Verify invalid `scope` values return `400 Bad Request` in production
+- [ ] Verify Azure AI Search index creation/backfill succeeds in production after deploy
+- [ ] Verify `GET /api/ai/semantic-search` returns live semantic results in production
+- [ ] Verify `POST /api/ai/recommendations` returns non-stub recommendations in production
+- [ ] Verify `POST /api/ai/review-assistant` returns live OpenAI output in production
 
 ---
 
@@ -287,4 +303,4 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Keep business logic in services.
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
-- The backend is live and real IGDB integration is in place, but AI/vector-search surfaces are still intentionally stubbed.
+- The backend is live and real IGDB integration is in place. The latest local codebase now includes a working AI/vector-search pass, but production should still be treated conservatively until the next deploy + smoke test is complete.

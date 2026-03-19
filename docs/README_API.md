@@ -6,7 +6,7 @@ ASP.NET Core Web API backend for **Backlogr**, a social video game tracking app 
 
 ## Current Status
 
-The backend is **deployed and working in Azure** for the current MVP. The codebase now includes the admin/account-management work, member profile endpoints, feed social-state expansion, review comment-read support, and the new feed scope split used by the frontend.
+The backend is **deployed and working in Azure** for the current MVP. The latest local codebase now also includes the real AI/vector-search pass: OpenAI-backed review assistance, Azure AI Search vector indexing, semantic search, and recommendation generation built from the user's own logs, ratings, and review text.
 
 **Production API URL:** `https://backlograpi.azurewebsites.net`
 
@@ -58,10 +58,14 @@ Implemented so far:
   - `DELETE /api/admin/users/{userId}`
 - Temporary bootstrap endpoint for one-time `SuperAdmin` elevation when explicitly enabled:
   - `POST /api/bootstrap/superadmin`
-- AI stub endpoints:
+- Real AI/vector-search endpoints:
   - `POST /api/ai/recommendations`
   - `POST /api/ai/review-assistant`
   - `GET /api/ai/semantic-search`
+- OpenAI-backed review assistant + embedding generation
+- Azure AI Search `games` index creation/backfill on startup for the local catalog
+- Semantic search over indexed game metadata
+- Recommendation generation based on the user's own logs, ratings, and review themes
 - Automated tests covering services, protected routes, and authenticated endpoint flows across implemented slices
 
 ### Confirmed deployed behavior
@@ -70,21 +74,27 @@ Implemented so far:
 - `GameLog.Rating` remains the source of truth for ratings.
 - IGDB search and import are working against the real IGDB API in both local development and production.
 - Browse/search can use the local catalog first and pull in IGDB-backed results through the backend search flow.
-- AI surfaces are still stub-backed for now.
+- The currently deployed API is still tracked conservatively as the pre-AI baseline until the latest AI/vector-search pass is redeployed and smoke tested.
+- The latest local codebase successfully builds/runs with real OpenAI + Azure AI Search integration.
 
 ### Latest codebase additions ready for next deploy / smoke test
-- Feed now supports `scope=for-you` and `scope=following` on `GET /api/feed`
-- **For You** returns broader recent activity across the app
-- **Following** returns followed-user activity plus the current user’s own activity
-- Feed controller validation now rejects invalid `scope` values with `400 Bad Request`
-- Feed service and integration tests now cover both feed scopes
+- OpenAI configuration/options added for chat + embeddings
+- Azure AI Search configuration/options added for vector search
+- `IEmbeddingService` + `OpenAiEmbeddingService` added
+- `IAiSearchIndexService` + `AzureAiSearchIndexService` added
+- `IAiSearchSyncService` + startup backfill added
+- `ISemanticSearchService` now uses real Azure AI Search hybrid/vector queries
+- `IRecommendationService` now builds recommendations from the user's taste profile
+- `IReviewAssistantService` now calls the live OpenAI Responses API
+- Feed scope support for `scope=for-you` and `scope=following` remains in place
 
 ### Not implemented yet
-- Real Azure AI / Azure AI Search integration
 - Production-grade global exception handling middleware
 - Structured logging / production diagnostics hardening
 - Review moderation/admin content-management endpoints
 - Public/admin audit trail tooling
+- Production smoke testing of the latest AI/vector-search pass after deploy
+- Incremental catalog re-indexing tied directly to import/update flows instead of full startup backfill
 
 ---
 
@@ -97,6 +107,8 @@ Implemented so far:
 - **ASP.NET Core Identity**
 - **JWT Bearer auth**
 - **Swashbuckle / Swagger**
+- **OpenAI API** for chat + embeddings
+- **Azure AI Search** for vector/hybrid search
 - **xUnit** for tests
 
 ---
@@ -292,6 +304,16 @@ Recommended local secrets shape:
     "ClientId": "your-igdb-client-id",
     "ClientSecret": "your-igdb-client-secret"
   },
+  "OpenAI": {
+    "ApiKey": "your-openai-api-key",
+    "ChatModel": "gpt-5.4-mini",
+    "EmbeddingModel": "text-embedding-3-small"
+  },
+  "AzureAiSearch": {
+    "Endpoint": "https://your-service.search.windows.net",
+    "ApiKey": "your-search-admin-key",
+    "GamesIndexName": "games"
+  },
   "SeedAdmin": {
     "Email": "admin@backlogr.local",
     "UserName": "admin",
@@ -311,6 +333,12 @@ dotnet user-secrets set "Jwt:Audience" "Backlogr.Web"
 dotnet user-secrets set "Jwt:Key" "replace-with-a-long-random-dev-secret"
 dotnet user-secrets set "Igdb:ClientId" "replace-with-your-igdb-client-id"
 dotnet user-secrets set "Igdb:ClientSecret" "replace-with-your-igdb-client-secret"
+dotnet user-secrets set "OpenAI:ApiKey" "replace-with-your-openai-api-key"
+dotnet user-secrets set "OpenAI:ChatModel" "gpt-5.4-mini"
+dotnet user-secrets set "OpenAI:EmbeddingModel" "text-embedding-3-small"
+dotnet user-secrets set "AzureAiSearch:Endpoint" "https://your-service.search.windows.net"
+dotnet user-secrets set "AzureAiSearch:ApiKey" "replace-with-your-search-admin-key"
+dotnet user-secrets set "AzureAiSearch:GamesIndexName" "games"
 ```
 
 ### Database migrations
@@ -356,6 +384,7 @@ In development, startup currently seeds:
 - one temporary test game for local development/testing
 - an optional development admin account when `SeedAdmin` values are present in user secrets
 - the development admin account is elevated to `SuperAdmin` for local admin testing
+- the Azure AI Search `games` index is ensured and the current local catalog is backfilled into search on startup
 
 Current seeded test game id:
 
@@ -425,7 +454,7 @@ This is only intended for local development/testing.
   - `scope=following`
   - `take=<n>`
 
-### AI (stub)
+### AI / vector search
 - `POST /api/ai/recommendations`
 - `POST /api/ai/review-assistant`
 - `GET /api/ai/semantic-search`
@@ -459,15 +488,18 @@ Current automated coverage includes:
 - game service tests
 - games controller tests
 - IGDB authenticated search/import flow tests
-- AI stub service tests
 - AI unauthorized route tests
 - authenticated AI flow tests
+- existing AI coverage should be expanded/updated for the new real OpenAI + Azure AI Search path
 - admin integration tests for user list/create/role-edit permissions
 
 Recommended next test additions:
 - self-delete account flow tests
 - admin delete-user flow tests
 - `SuperAdmin` grant/delete guardrail tests for the latest account-management additions
+- semantic-search service/controller tests for real vector-backed results
+- recommendation service tests for exclusion of already-logged games
+- review-assistant service tests for OpenAI response parsing
 
 Run tests from `Backlogr.Api` or repo root:
 
