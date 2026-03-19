@@ -2,7 +2,7 @@
 
 Nuxt 3 + Vuetify 3 + TypeScript frontend for **Backlogr** — a Letterboxd-style social web app for video games.
 
-This frontend is deployed in Azure Static Web Apps. The current codebase now includes the landing page, admin/account-management flows, member profile pages, feed review interactions, the new **For You / Following** feed split, and the current Vitest coverage pass.
+This frontend is deployed in Azure Static Web Apps. The current codebase now includes the landing page, admin/account-management flows, member profile pages, feed review interactions, the new **For You / Following** feed split, and the latest AI wiring pass for browse semantic search, AI picks, and the review assistant.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -80,7 +80,11 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
   - `SuperAdmin` role edit flow
   - delete-user flow for allowed targets
 - AI Picks page wired to `POST /api/ai/recommendations`
+- Browse page now supports **Standard** vs **Semantic** search modes
+- Browse semantic search is wired to `GET /api/ai/semantic-search`
+- Browse page includes a dedicated on-page search panel for clearer discovery UX
 - Review assistant wired to `POST /api/ai/review-assistant`
+- Review assistant action bar polished to make draft/rewrite/shorten/expand/spoiler-safe actions more obvious
 - Local fallback cover asset added for deployment safety
 - Production build succeeds locally
 - Frontend Vitest setup is in place with current service/store/component/page tests
@@ -91,20 +95,23 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Register, login, library, and feed are working in production at the same level they were working in development.
 - Frontend is successfully calling the deployed API.
 - The production browse catalog is populated from the live backend catalog.
+- The latest AI/browse UX changes have been verified locally and are ready for the next deploy + smoke test pass.
 
 ### Latest codebase additions ready for next deploy / smoke test
-- Feed source tabs: **For You** and **Following**
-- Route-query persistence for the selected feed tab
-- Feed page empty-state/copy updates for the new feed split
-- Feed page Vitest coverage for source-tab behavior
-- Expanded `feedService` test coverage for feed scopes
+- Browse page **Standard / Semantic** search toggle
+- Dedicated browse-page search field + semantic example chips
+- Semantic search results route directly into local game pages
+- AI Picks page copy now reflects live recommendation behavior instead of stubs
+- Log page review-assistant UX polish for clearer assistant actions
+- Vitest coverage added for `/browse` semantic-mode behavior
+- Vitest coverage added for `/recommend` rendering
 
 ### Current known limitations
 - Member profile pages are still **authenticated routes** in the current MVP, not signed-out public pages
-- Semantic search UI is not built yet
 - Game-detail review/activity tabs are not built yet
 - Broader frontend test coverage is still incomplete beyond the current covered slices
-- AI-backed features are still limited to the current backend stub behavior
+- AI relevance is currently MVP-level and should improve as the catalog/search metadata gets richer
+- The latest AI/frontend pass still needs production smoke testing after deploy
 
 ---
 
@@ -173,8 +180,10 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Protected actions use confirmation dialogs, filtered actions, and disabled states to reduce mistakes.
 
 ### AI surfaces
-- Recommendation and review-assistant pages are wired.
-- These still rely on the current backend stub behavior rather than real AI integration.
+- Recommendation page is wired to the live recommendation endpoint.
+- Browse page now exposes semantic search as a first-class UI mode.
+- Log page review assistant is wired to the live review-assistant endpoint.
+- Current AI behavior is intentionally MVP-level and prioritizes a stable end-to-end integration over heavy prompt tuning.
 
 ---
 
@@ -256,6 +265,8 @@ Current frontend coverage includes:
 - store tests for `authStore`
 - component tests for `FeedReviewCard` and `FeedReviewCommentThread`
 - page test coverage for `/feed`
+- page test coverage for `/browse`
+- page test coverage for `/recommend`
 - page test coverage for `/u/[username]`
 
 This is still partial app coverage, but the current covered slices are passing.
