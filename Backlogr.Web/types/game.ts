@@ -1,3 +1,6 @@
+import type { LibraryLogResponseDto } from '~/types/library'
+import type { ReviewResponseDto } from '~/types/review'
+
 export interface GameBrowseResultDto {
   gameId: string | null
   igdbId: number | null
@@ -32,6 +35,11 @@ export interface GameDetailResponseDto {
   genres: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface GameViewerStateResponseDto {
+  log: LibraryLogResponseDto | null
+  review: ReviewResponseDto | null
 }
 
 export interface ImportedGameResponseDto {

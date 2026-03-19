@@ -4,11 +4,11 @@ import { navigateTo, useRoute } from '#imports'
 import { AxiosError } from 'axios'
 import SectionHeader from '~/components/layout/SectionHeader.vue'
 import { runReviewAssistant } from '~/services/aiService'
-import { getGameById } from '~/services/gameService'
+import { getGameById, getGameViewerState } from '~/services/gameService'
 import { upsertLibraryLog } from '~/services/libraryService'
-import { createReview } from '~/services/reviewService'
+import { createReview, updateReview } from '~/services/reviewService'
 import type { ReviewAssistantMode } from '~/types/ai'
-import type { GameDetailResponseDto } from '~/types/game'
+import type { GameDetailResponseDto, GameViewerStateResponseDto } from '~/types/game'
 import type { LibraryStatus, UpsertLibraryLogRequestDto } from '~/types/library'
 
 definePageMeta({
@@ -48,6 +48,7 @@ const assistantExamples = [
 
 const game = ref<GameDetailResponseDto | null>(null)
 const isLoadingGame = ref(false)
+const isLoadingViewerState = ref(false)
 const isSubmitting = ref(false)
 const isRunningAssistant = ref(false)
 const errorMessage = ref('')
@@ -63,18 +64,40 @@ const notes = ref('')
 const reviewText = ref('')
 const hasSpoilers = ref(false)
 const assistantPrompt = ref('')
+const existingReviewId = ref<string | null>(null)
+const hasExistingLog = ref(false)
 
 const gameId = computed(() => {
   const value = route.query.gameId
   return typeof value === 'string' ? value : ''
 })
 
+const isLoadingPage = computed(() => isLoadingGame.value || isLoadingViewerState.value)
+const hasExistingReview = computed(() => existingReviewId.value !== null)
+const isEditingExistingEntry = computed(() => hasExistingLog.value || hasExistingReview.value)
+
 const pageTitle = computed(() => {
-  return game.value ? `Log ${game.value.title}` : 'Log a Game'
+  if (!game.value) {
+    return 'Log a Game'
+  }
+
+  return isEditingExistingEntry.value
+    ? `Update ${game.value.title}`
+    : `Log ${game.value.title}`
+})
+
+const pageRightText = computed(() => {
+  return isEditingExistingEntry.value
+    ? 'Edit your log or review'
+    : 'Create a log or review'
+})
+
+const submitLabel = computed(() => {
+  return isEditingExistingEntry.value ? 'Update log' : 'Save log'
 })
 
 const canSubmit = computed(() => {
-  return !isLoadingGame.value
+  return !isLoadingPage.value
     && !isSubmitting.value
     && gameId.value.length > 0
     && game.value !== null
@@ -102,6 +125,21 @@ const heroMeta = computed(() => {
   return parts.join(' • ')
 })
 
+function resetForm(): void {
+  status.value = 'Played'
+  rating.value = '4.5'
+  platform.value = ''
+  hours.value = ''
+  startedAt.value = ''
+  finishedAt.value = ''
+  notes.value = ''
+  reviewText.value = ''
+  hasSpoilers.value = false
+  assistantPrompt.value = ''
+  existingReviewId.value = null
+  hasExistingLog.value = false
+}
+
 function parseOptionalNumber(value: string): number | null {
   const trimmed = value.trim()
 
@@ -121,6 +159,14 @@ function parseOptionalNumber(value: string): number | null {
 function parseOptionalDate(value: string): string | null {
   const trimmed = value.trim()
   return trimmed ? trimmed : null
+}
+
+function toDateInputValue(value: string | null): string {
+  if (!value) {
+    return ''
+  }
+
+  return value.slice(0, 10)
 }
 
 function getErrorMessage(error: unknown): string {
@@ -159,6 +205,75 @@ function applyAssistantExample(example: string): void {
   assistantPrompt.value = example
 }
 
+function applyViewerState(viewerState: GameViewerStateResponseDto): void {
+  const { log, review } = viewerState
+
+  hasExistingLog.value = log !== null
+  existingReviewId.value = review?.reviewId ?? null
+
+  if (log) {
+    status.value = log.status
+    rating.value = log.rating !== null ? log.rating.toString() : ''
+    platform.value = log.platform ?? ''
+    hours.value = log.hours !== null ? log.hours.toString() : ''
+    startedAt.value = toDateInputValue(log.startedAt)
+    finishedAt.value = toDateInputValue(log.finishedAt)
+    notes.value = log.notes ?? ''
+  }
+  else {
+    status.value = 'Played'
+    rating.value = '4.5'
+    platform.value = ''
+    hours.value = ''
+    startedAt.value = ''
+    finishedAt.value = ''
+    notes.value = ''
+  }
+
+  if (review) {
+    reviewText.value = review.text
+    hasSpoilers.value = review.hasSpoilers
+  }
+  else {
+    reviewText.value = ''
+    hasSpoilers.value = false
+  }
+}
+
+function validateForm(): boolean {
+  const parsedRating = parseOptionalNumber(rating.value)
+  const parsedHours = parseOptionalNumber(hours.value)
+  const parsedStartedAt = parseOptionalDate(startedAt.value)
+  const parsedFinishedAt = parseOptionalDate(finishedAt.value)
+
+  if (rating.value.trim() && parsedRating === null) {
+    errorMessage.value = 'Rating must be a valid number between 0 and 5.'
+    return false
+  }
+
+  if (parsedRating !== null && (parsedRating < 0 || parsedRating > 5)) {
+    errorMessage.value = 'Rating must be between 0 and 5.'
+    return false
+  }
+
+  if (hours.value.trim() && parsedHours === null) {
+    errorMessage.value = 'Hours played must be a valid number.'
+    return false
+  }
+
+  if (parsedHours !== null && parsedHours < 0) {
+    errorMessage.value = 'Hours played cannot be negative.'
+    return false
+  }
+
+  if (parsedStartedAt && parsedFinishedAt && parsedFinishedAt < parsedStartedAt) {
+    errorMessage.value = 'Finished date cannot be earlier than the started date.'
+    return false
+  }
+
+  return true
+}
+
 async function loadGame(): Promise<void> {
   if (!gameId.value) {
     game.value = null
@@ -166,7 +281,6 @@ async function loadGame(): Promise<void> {
   }
 
   isLoadingGame.value = true
-  errorMessage.value = ''
 
   try {
     game.value = await getGameById(gameId.value)
@@ -178,6 +292,43 @@ async function loadGame(): Promise<void> {
   finally {
     isLoadingGame.value = false
   }
+}
+
+async function loadViewerState(): Promise<void> {
+  if (!gameId.value) {
+    resetForm()
+    return
+  }
+
+  isLoadingViewerState.value = true
+
+  try {
+    const viewerState = await getGameViewerState(gameId.value)
+    applyViewerState(viewerState)
+  }
+  catch (error: unknown) {
+    resetForm()
+    errorMessage.value = getErrorMessage(error)
+  }
+  finally {
+    isLoadingViewerState.value = false
+  }
+}
+
+async function loadPageState(): Promise<void> {
+  errorMessage.value = ''
+  assistantErrorMessage.value = ''
+
+  if (!gameId.value) {
+    game.value = null
+    resetForm()
+    return
+  }
+
+  await Promise.all([
+    loadGame(),
+    loadViewerState(),
+  ])
 }
 
 async function handleAssistant(action: AssistantAction): Promise<void> {
@@ -224,8 +375,14 @@ async function handleSubmit(): Promise<void> {
     return
   }
 
-  isSubmitting.value = true
   errorMessage.value = ''
+  assistantErrorMessage.value = ''
+
+  if (!validateForm()) {
+    return
+  }
+
+  isSubmitting.value = true
 
   try {
     const payload: UpsertLibraryLogRequestDto = {
@@ -241,12 +398,24 @@ async function handleSubmit(): Promise<void> {
 
     await upsertLibraryLog(payload)
 
-    if (reviewText.value.trim().length > 0) {
-      await createReview({
-        gameId: gameId.value,
-        text: reviewText.value.trim(),
-        hasSpoilers: hasSpoilers.value,
-      })
+    const trimmedReviewText = reviewText.value.trim()
+
+    if (trimmedReviewText.length > 0) {
+      if (existingReviewId.value) {
+        await updateReview(existingReviewId.value, {
+          text: trimmedReviewText,
+          hasSpoilers: hasSpoilers.value,
+        })
+      }
+      else {
+        const createdReview = await createReview({
+          gameId: gameId.value,
+          text: trimmedReviewText,
+          hasSpoilers: hasSpoilers.value,
+        })
+
+        existingReviewId.value = createdReview.reviewId
+      }
     }
 
     await navigateTo(`/game/${gameId.value}`)
@@ -262,7 +431,7 @@ async function handleSubmit(): Promise<void> {
 watch(
   () => gameId.value,
   async () => {
-    await loadGame()
+    await loadPageState()
   },
   { immediate: true },
 )
@@ -273,7 +442,7 @@ watch(
     <SectionHeader
       icon="mdi-plus"
       :title="pageTitle"
-      right-text="Create a log or review"
+      :right-text="pageRightText"
     />
 
     <v-alert
@@ -287,7 +456,7 @@ watch(
     </v-alert>
 
     <v-card
-      v-if="isLoadingGame"
+      v-if="isLoadingPage"
       class="panel"
       rounded="xl"
       flat
@@ -341,6 +510,16 @@ watch(
           </div>
         </div>
       </v-card>
+
+      <v-alert
+        v-if="isEditingExistingEntry"
+        type="info"
+        variant="tonal"
+        rounded="lg"
+        class="mb-4"
+      >
+        Your existing log{{ hasExistingReview ? ' and review' : '' }} for this game were loaded into the form.
+      </v-alert>
 
       <v-card class="panel" rounded="xl" flat>
         <v-form @submit.prevent="handleSubmit">
@@ -526,7 +705,7 @@ watch(
               :loading="isSubmitting"
               :disabled="!canSubmit"
             >
-              Save log
+              {{ submitLabel }}
             </v-btn>
 
             <v-btn

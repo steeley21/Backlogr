@@ -178,6 +178,7 @@ builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IGameDetailsService, GameDetailsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
 builder.Services.AddScoped<ISuperAdminBootstrapService, SuperAdminBootstrapService>();

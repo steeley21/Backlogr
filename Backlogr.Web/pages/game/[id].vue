@@ -1,17 +1,47 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute, navigateTo } from '#imports'
-import { AxiosError } from 'axios'
+import { navigateTo, useRoute } from '#imports'
+import FeedLogCard from '~/components/feed/FeedLogCard.vue'
+import FeedReviewCard from '~/components/feed/FeedReviewCard.vue'
 import SectionHeader from '~/components/layout/SectionHeader.vue'
-import { getGameById } from '~/services/gameService'
-import type { GameDetailResponseDto } from '~/types/game'
+import StarRating from '~/components/shared/StarRating.vue'
+import {
+  getGameActivity,
+  getGameById,
+  getGameReviews,
+  getGameViewerState,
+} from '~/services/gameService'
+import type { FeedItem, FeedReviewItem } from '~/types/feed'
+import type { GameDetailResponseDto, GameViewerStateResponseDto } from '~/types/game'
+import type { ReviewResponseDto } from '~/types/review'
+import { getApiErrorMessage } from '~/utils/apiError'
+
+type GameDetailTab = 'about' | 'reviews' | 'activity'
+type SnackbarColor = 'success' | 'error'
 
 const route = useRoute()
 
 const game = ref<GameDetailResponseDto | null>(null)
-const isLoading = ref(false)
-const errorMessage = ref('')
-const tab = ref<'about' | 'reviews' | 'activity'>('about')
+const viewerState = ref<GameViewerStateResponseDto | null>(null)
+const reviewItems = ref<FeedReviewItem[]>([])
+const activityItems = ref<FeedItem[]>([])
+
+const isLoadingGame = ref(false)
+const isLoadingViewerState = ref(false)
+const isLoadingReviews = ref(false)
+const isLoadingActivity = ref(false)
+
+const gameErrorMessage = ref('')
+const viewerErrorMessage = ref('')
+const reviewsErrorMessage = ref('')
+const activityErrorMessage = ref('')
+
+const tab = ref<GameDetailTab>('about')
+const snackbar = ref({
+  isOpen: false,
+  color: 'success' as SnackbarColor,
+  message: '',
+})
 
 const gameId = computed(() => {
   const value = route.params.id
@@ -65,47 +95,187 @@ const coverStyle = computed(() => {
   }
 })
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const apiMessage = error.response?.data
+const hasViewerContent = computed(() => {
+  return Boolean(viewerState.value?.log || viewerState.value?.review)
+})
 
-    if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
-      return apiMessage
-    }
+const myLogStatusColor = computed(() => {
+  const status = viewerState.value?.log?.status
+
+  switch (status) {
+    case 'Played':
+      return 'primary'
+    case 'Playing':
+      return 'success'
+    case 'Wishlist':
+      return 'secondary'
+    case 'Dropped':
+      return 'error'
+    default:
+      return 'default'
   }
+})
 
-  return 'Unable to load this game right now. Please try again.'
+const communitySummary = computed(() => {
+  const reviewCount = reviewItems.value.length
+  const activityCount = activityItems.value.length
+
+  return `${reviewCount} review${reviewCount === 1 ? '' : 's'} • ${activityCount} recent activit${activityCount === 1 ? 'y' : 'ies'}`
+})
+
+function showSnackbar(message: string, color: SnackbarColor): void {
+  snackbar.value = {
+    isOpen: true,
+    color,
+    message,
+  }
 }
 
-async function loadGame(): Promise<void> {
-  if (!gameId.value) {
-    game.value = null
-    errorMessage.value = 'Invalid game id.'
-    return
+function sortFeedItems(items: FeedItem[]): FeedItem[] {
+  return [...items].sort((left, right) => {
+    const leftDate = left.type === 'review' ? left.reviewedAt : left.updatedAt
+    const rightDate = right.type === 'review' ? right.reviewedAt : right.updatedAt
+
+    return Date.parse(rightDate) - Date.parse(leftDate)
+  })
+}
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown'
   }
 
-  isLoading.value = true
-  errorMessage.value = ''
+  return new Date(value).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function getSectionFallbackMessage(section: 'game' | 'viewer' | 'reviews' | 'activity'): string {
+  switch (section) {
+    case 'viewer':
+      return 'Unable to load your log state for this game right now.'
+    case 'reviews':
+      return 'Unable to load reviews for this game right now.'
+    case 'activity':
+      return 'Unable to load activity for this game right now.'
+    default:
+      return 'Unable to load this game right now. Please try again.'
+  }
+}
+
+async function loadGame(): Promise<boolean> {
+  if (!gameId.value) {
+    game.value = null
+    gameErrorMessage.value = 'Invalid game id.'
+    return false
+  }
+
+  isLoadingGame.value = true
+  gameErrorMessage.value = ''
 
   try {
     game.value = await getGameById(gameId.value)
+    return true
   }
   catch (error: unknown) {
     game.value = null
-    errorMessage.value = getErrorMessage(error)
+    gameErrorMessage.value = getApiErrorMessage(error, getSectionFallbackMessage('game'))
+    return false
   }
   finally {
-    isLoading.value = false
+    isLoadingGame.value = false
   }
 }
 
-watch(
-  () => gameId.value,
-  async () => {
-    await loadGame()
-  },
-  { immediate: true },
-)
+async function loadViewerState(): Promise<void> {
+  if (!gameId.value) {
+    viewerState.value = null
+    return
+  }
+
+  isLoadingViewerState.value = true
+  viewerErrorMessage.value = ''
+
+  try {
+    viewerState.value = await getGameViewerState(gameId.value)
+  }
+  catch (error: unknown) {
+    viewerState.value = null
+    viewerErrorMessage.value = getApiErrorMessage(error, getSectionFallbackMessage('viewer'))
+  }
+  finally {
+    isLoadingViewerState.value = false
+  }
+}
+
+async function loadReviews(): Promise<void> {
+  if (!gameId.value) {
+    reviewItems.value = []
+    return
+  }
+
+  isLoadingReviews.value = true
+  reviewsErrorMessage.value = ''
+
+  try {
+    reviewItems.value = await getGameReviews(gameId.value, 20)
+  }
+  catch (error: unknown) {
+    reviewItems.value = []
+    reviewsErrorMessage.value = getApiErrorMessage(error, getSectionFallbackMessage('reviews'))
+  }
+  finally {
+    isLoadingReviews.value = false
+  }
+}
+
+async function loadActivity(): Promise<void> {
+  if (!gameId.value) {
+    activityItems.value = []
+    return
+  }
+
+  isLoadingActivity.value = true
+  activityErrorMessage.value = ''
+
+  try {
+    activityItems.value = await getGameActivity(gameId.value, 25)
+  }
+  catch (error: unknown) {
+    activityItems.value = []
+    activityErrorMessage.value = getApiErrorMessage(error, getSectionFallbackMessage('activity'))
+  }
+  finally {
+    isLoadingActivity.value = false
+  }
+}
+
+async function loadCommunitySections(): Promise<void> {
+  await Promise.all([
+    loadViewerState(),
+    loadReviews(),
+    loadActivity(),
+  ])
+}
+
+async function loadPage(): Promise<void> {
+  viewerState.value = null
+  reviewItems.value = []
+  activityItems.value = []
+  viewerErrorMessage.value = ''
+  reviewsErrorMessage.value = ''
+  activityErrorMessage.value = ''
+
+  const loaded = await loadGame()
+
+  if (!loaded) {
+    return
+  }
+
+  await loadCommunitySections()
+}
 
 async function goToLog(): Promise<void> {
   if (!gameId.value) {
@@ -117,12 +287,79 @@ async function goToLog(): Promise<void> {
     query: { gameId: gameId.value },
   })
 }
+
+function handleReviewUpdated(updatedReview: ReviewResponseDto): void {
+  reviewItems.value = sortFeedItems(
+    reviewItems.value.map((item) => {
+      if (item.id !== updatedReview.reviewId) {
+        return item
+      }
+
+      return {
+        ...item,
+        text: updatedReview.text,
+        hasSpoilers: updatedReview.hasSpoilers,
+        reviewedAt: updatedReview.updatedAt,
+      }
+    }),
+  ).filter((item): item is FeedReviewItem => item.type === 'review')
+
+  activityItems.value = sortFeedItems(
+    activityItems.value.map((item) => {
+      if (item.type !== 'review' || item.id !== updatedReview.reviewId) {
+        return item
+      }
+
+      return {
+        ...item,
+        text: updatedReview.text,
+        hasSpoilers: updatedReview.hasSpoilers,
+        reviewedAt: updatedReview.updatedAt,
+      }
+    }),
+  )
+
+  if (viewerState.value?.review?.reviewId === updatedReview.reviewId) {
+    viewerState.value = {
+      ...viewerState.value,
+      review: updatedReview,
+    }
+  }
+
+  showSnackbar('Review updated.', 'success')
+}
+
+function handleReviewDeleted(reviewId: string): void {
+  reviewItems.value = reviewItems.value.filter(item => item.id !== reviewId)
+  activityItems.value = activityItems.value.filter(item => !(item.type === 'review' && item.id === reviewId))
+
+  if (viewerState.value?.review?.reviewId === reviewId) {
+    viewerState.value = {
+      ...viewerState.value,
+      review: null,
+    }
+  }
+
+  showSnackbar('Review deleted.', 'success')
+}
+
+function handleFeedFeedback(message: string, color: SnackbarColor): void {
+  showSnackbar(message, color)
+}
+
+watch(
+  () => gameId.value,
+  async () => {
+    await loadPage()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div>
     <v-skeleton-loader
-      v-if="isLoading"
+      v-if="isLoadingGame"
       type="image, article, article"
       class="detail-skeleton"
     />
@@ -161,17 +398,156 @@ async function goToLog(): Promise<void> {
         </div>
       </v-card>
 
-      <div class="mt-5">
-        <v-btn-toggle
-          v-model="tab"
-          mandatory
-          rounded="pill"
-          class="filter"
+      <v-card class="panel mt-5" rounded="xl" flat>
+        <SectionHeader
+          icon="mdi-controller-classic-outline"
+          title="My log"
+          right-text="Your history with this game"
+        />
+
+        <v-skeleton-loader
+          v-if="isLoadingViewerState"
+          type="article"
+          class="detail-skeleton"
+        />
+
+        <v-alert
+          v-else-if="viewerErrorMessage"
+          type="error"
+          variant="tonal"
+          rounded="lg"
+          class="mb-4"
         >
-          <v-btn value="about" class="text-none">About</v-btn>
-          <v-btn value="reviews" class="text-none">Reviews</v-btn>
-          <v-btn value="activity" class="text-none">Activity</v-btn>
-        </v-btn-toggle>
+          {{ viewerErrorMessage }}
+        </v-alert>
+
+        <div v-else-if="hasViewerContent" class="my-log-grid">
+          <div class="my-log-main">
+            <div class="my-log-topline">
+              <v-chip
+                v-if="viewerState?.log?.status"
+                :color="myLogStatusColor"
+                variant="tonal"
+                size="small"
+              >
+                {{ viewerState.log.status }}
+              </v-chip>
+
+              <StarRating
+                v-if="typeof viewerState?.log?.rating === 'number'"
+                :rating="viewerState.log.rating"
+                :size="18"
+              />
+
+              <span v-if="viewerState?.log?.platform" class="muted">{{ viewerState.log.platform }}</span>
+              <span v-if="typeof viewerState?.log?.hours === 'number'" class="muted">{{ viewerState.log.hours }}h</span>
+              <span v-if="viewerState?.review" class="muted">Reviewed {{ formatDate(viewerState.review.updatedAt) }}</span>
+            </div>
+
+            <div v-if="viewerState?.review" class="review-shell mt-4">
+              <div class="text-subtitle-1 font-weight-bold mb-2">Your review</div>
+              <p class="review-text">
+                {{ viewerState.review.text }}
+              </p>
+              <div class="d-flex ga-2 flex-wrap mt-3">
+                <v-chip
+                  v-if="viewerState.review.hasSpoilers"
+                  color="warning"
+                  variant="tonal"
+                  size="small"
+                >
+                  Spoilers
+                </v-chip>
+                <v-chip size="small" variant="outlined">
+                  Updated {{ formatDate(viewerState.review.updatedAt) }}
+                </v-chip>
+              </div>
+            </div>
+            <div v-else class="muted mt-4">
+              You have this game in your library, but you have not written a review yet.
+            </div>
+
+            <div class="d-flex ga-3 flex-wrap mt-5">
+              <v-btn
+                v-if="!viewerState?.review"
+                color="primary"
+                rounded="pill"
+                class="text-none px-5"
+                @click="goToLog"
+              >
+                {{ viewerState?.log ? 'Add a review' : 'Log this game' }}
+              </v-btn>
+
+              <v-btn
+                variant="text"
+                rounded="pill"
+                class="text-none"
+                to="/library"
+              >
+                Open Library
+              </v-btn>
+            </div>
+          </div>
+
+          <div class="meta-card">
+            <div class="meta-row">
+              <div class="meta-label">Status</div>
+              <div class="meta-value">{{ viewerState?.log?.status ?? 'Not in your library yet' }}</div>
+            </div>
+
+            <div class="meta-row">
+              <div class="meta-label">Started</div>
+              <div class="meta-value">{{ formatDate(viewerState?.log?.startedAt) }}</div>
+            </div>
+
+            <div class="meta-row">
+              <div class="meta-label">Finished</div>
+              <div class="meta-value">{{ formatDate(viewerState?.log?.finishedAt) }}</div>
+            </div>
+
+            <div class="meta-row">
+              <div class="meta-label">Notes</div>
+              <div class="meta-value">{{ viewerState?.log?.notes || 'No personal notes yet.' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="empty-state mt-1">
+          <div class="text-h6 font-weight-bold mb-2">Nothing logged here yet</div>
+          <div class="muted">
+            Add this game to your library or write your first review to start building your history with it.
+          </div>
+
+          <div class="mt-4">
+            <v-btn
+              color="primary"
+              rounded="pill"
+              class="text-none px-5"
+              @click="goToLog"
+            >
+              Log this game
+            </v-btn>
+          </div>
+        </div>
+      </v-card>
+
+      <div class="mt-5">
+        <div class="tabs-row">
+          <v-btn-toggle
+            v-model="tab"
+            mandatory
+            rounded="pill"
+            class="filter"
+          >
+            <v-btn value="about" class="text-none">About</v-btn>
+            <v-btn value="reviews" class="text-none">Reviews</v-btn>
+            <v-btn value="activity" class="text-none">Activity</v-btn>
+          </v-btn-toggle>
+
+          <div class="muted tabs-summary">
+            {{ communitySummary }}
+          </div>
+        </div>
 
         <v-card class="panel mt-4" rounded="xl" flat>
           <div v-if="tab === 'about'">
@@ -217,15 +593,83 @@ async function goToLog(): Promise<void> {
 
           <div v-else-if="tab === 'reviews'">
             <SectionHeader icon="mdi-message-text" title="Reviews" />
-            <div class="muted">
-              Review wiring comes next after the core log and review endpoints are connected.
+
+            <v-skeleton-loader
+              v-if="isLoadingReviews"
+              type="article, article"
+              class="detail-skeleton"
+            />
+
+            <v-alert
+              v-else-if="reviewsErrorMessage"
+              type="error"
+              variant="tonal"
+              rounded="lg"
+              class="mb-4"
+            >
+              {{ reviewsErrorMessage }}
+            </v-alert>
+
+            <div v-else-if="reviewItems.length === 0" class="empty-state compact-empty">
+              <div class="text-subtitle-1 font-weight-bold mb-2">No reviews yet</div>
+              <div class="muted">
+                Be the first person to share what you thought about {{ game.title }}.
+              </div>
+            </div>
+
+            <div v-else class="stack">
+              <FeedReviewCard
+                v-for="item in reviewItems"
+                :key="item.id"
+                :item="item"
+                @updated="handleReviewUpdated"
+                @deleted="handleReviewDeleted"
+                @feedback="handleFeedFeedback"
+              />
             </div>
           </div>
 
           <div v-else>
             <SectionHeader icon="mdi-history" title="Activity" />
-            <div class="muted">
-              Activity wiring will be added after feed and library integration are in place.
+
+            <v-skeleton-loader
+              v-if="isLoadingActivity"
+              type="article, article"
+              class="detail-skeleton"
+            />
+
+            <v-alert
+              v-else-if="activityErrorMessage"
+              type="error"
+              variant="tonal"
+              rounded="lg"
+              class="mb-4"
+            >
+              {{ activityErrorMessage }}
+            </v-alert>
+
+            <div v-else-if="activityItems.length === 0" class="empty-state compact-empty">
+              <div class="text-subtitle-1 font-weight-bold mb-2">No recent activity yet</div>
+              <div class="muted">
+                Once people log or review {{ game.title }}, their activity will show up here.
+              </div>
+            </div>
+
+            <div v-else class="stack">
+              <template v-for="item in activityItems" :key="`${item.type}-${item.id}`">
+                <FeedReviewCard
+                  v-if="item.type === 'review'"
+                  :item="item"
+                  @updated="handleReviewUpdated"
+                  @deleted="handleReviewDeleted"
+                  @feedback="handleFeedFeedback"
+                />
+
+                <FeedLogCard
+                  v-else
+                  :item="item"
+                />
+              </template>
             </div>
           </div>
         </v-card>
@@ -234,13 +678,13 @@ async function goToLog(): Promise<void> {
 
     <template v-else>
       <v-alert
-        v-if="errorMessage"
+        v-if="gameErrorMessage"
         type="error"
         variant="tonal"
         rounded="lg"
         class="mb-4"
       >
-        {{ errorMessage }}
+        {{ gameErrorMessage }}
       </v-alert>
 
       <v-card class="panel" rounded="xl" flat>
@@ -250,6 +694,15 @@ async function goToLog(): Promise<void> {
         </div>
       </v-card>
     </template>
+
+    <v-snackbar
+      v-model="snackbar.isOpen"
+      :color="snackbar.color"
+      timeout="2400"
+      location="bottom right"
+    >
+      {{ snackbar.message }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -303,11 +756,49 @@ async function goToLog(): Promise<void> {
   color: var(--foreground);
 }
 
-.about-grid {
+.tabs-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tabs-summary {
+  font-size: 0.95rem;
+}
+
+.about-grid,
+.my-log-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 20px;
   align-items: start;
+}
+
+.about-main,
+.my-log-main {
+  min-width: 0;
+}
+
+.my-log-topline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.review-shell {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.review-text {
+  color: var(--foreground);
+  line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .meta-card {
@@ -337,12 +828,29 @@ async function goToLog(): Promise<void> {
   line-height: 1.45;
 }
 
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.empty-state {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.compact-empty {
+  margin-top: 4px;
+}
+
 .detail-skeleton {
   background: transparent;
 }
 
 @media (max-width: 860px) {
-  .about-grid {
+  .about-grid,
+  .my-log-grid {
     grid-template-columns: 1fr;
   }
 
