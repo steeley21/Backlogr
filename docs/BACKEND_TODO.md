@@ -1,8 +1,8 @@
 # BACKEND_TODO — Backlogr.Api
 
-Last updated: 2026-03-19
+Last updated: 2026-03-18
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, the **For You / Following** feed scope split, and the deployed AI/vector-search integration.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, the **For You / Following** feed scope split, the deployed AI/vector-search integration, and the game-detail read-surface pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -49,6 +49,10 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Real semantic search service wired to Azure AI Search
 - [x] Real recommendation service wired to the user's own logs/ratings/reviews
 - [x] Real review-assistant service wired to OpenAI
+- [x] Game-detail viewer-state endpoint added
+- [x] Game-detail reviews endpoint added
+- [x] Game-detail activity endpoint added
+- [x] Backend coverage added for the new game-detail read surface
 
 ### Important scope notes
 - [x] Treat the live AI/vector-search path as deployed and working
@@ -92,6 +96,9 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `GET /api/games`
 - [x] `GET /api/games/search`
 - [x] `GET /api/games/{gameId}`
+- [x] `GET /api/games/{gameId}/me`
+- [x] `GET /api/games/{gameId}/reviews`
+- [x] `GET /api/games/{gameId}/activity`
 
 ### IGDB slice
 - [x] `IIgdbService`
@@ -220,6 +227,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed scope rules for **For You** and **Following**
 - [x] Member profile query rules
 - [x] Game search/detail rules
+- [x] Game-detail viewer-state/read rules
 - [x] IGDB search/import flow rules
 - [ ] Dedicated automated coverage for the real OpenAI/Azure AI Search services
 
@@ -233,6 +241,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Review comment-read auth/flow tests
 - [x] Feed integration assertions for both feed scopes
 - [x] Feed integration assertions for expanded social-state fields
+- [x] Game-detail endpoint integration coverage
 - [x] AI endpoint auth + happy-path flow tests with fake AI services
 
 ### Next backend tests to add
@@ -274,6 +283,9 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Verify `GET /api/reviews/{reviewId}/comments` supports the deployed frontend comment-thread flow
 - [ ] Verify `GET /api/feed?scope=for-you` returns the broader feed in production
 - [ ] Verify `GET /api/feed?scope=following` returns followed-user + self activity in production
+- [ ] Verify `GET /api/games/{gameId}/me` in production
+- [ ] Verify `GET /api/games/{gameId}/reviews` in production
+- [ ] Verify `GET /api/games/{gameId}/activity` in production
 - [ ] Verify invalid `scope` values return `400 Bad Request` in production
 
 ---

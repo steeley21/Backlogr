@@ -1,8 +1,8 @@
 # FRONTEND_TODO — Backlogr.Web
 
-Last updated: 2026-03-19
+Last updated: 2026-03-18
 
-This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, the **For You / Following** feed split, and the deployed AI/frontend wiring for browse semantic search and live recommendation/review-assistant flows.
+This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, the **For You / Following** feed split, the deployed AI/frontend wiring for browse semantic search and live recommendation/review-assistant flows, and the completed game-detail/log-edit pass.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -49,12 +49,17 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Log page review-assistant UX polish
 - [x] Browse page Vitest coverage
 - [x] Recommend page Vitest coverage
+- [x] Game-detail Reviews tab wiring
+- [x] Game-detail Activity tab wiring
+- [x] Game-detail **My log** panel
+- [x] Log page edit-existing-review flow
+- [x] `gameService` Vitest coverage
+- [x] `pages/game/[id]` Vitest coverage
+- [x] `pages/log` Vitest coverage
 
 ### Current known limitations
 - [ ] Frontend test coverage is still partial beyond the current covered slices
 - [ ] Member profiles are still authenticated routes rather than signed-out public pages
-- [ ] Game-detail review/activity tabs are not built yet
-- [ ] “My log” panel on the game-detail page is not built yet
 - [ ] Admin delete-user UI is not currently wired in this repo snapshot
 
 ---
@@ -147,16 +152,16 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Entry launched from real `gameId`
 - [x] Optional review creation on save
 - [x] Review assistant tools integrated
+- [x] True edit-existing-review flow
 - [ ] Search/select-game flow from inside the page itself
-- [ ] True edit-existing-review flow *(backend still lacks a dedicated “my review for this game” lookup endpoint)*
 
 ### Game detail
 - [x] Real game detail fetch
 - [x] Real metadata rendering
 - [x] Real route navigation from browse/library/recommendations
-- [ ] Reviews tab wiring
-- [ ] Activity tab wiring
-- [ ] “My log” panel
+- [x] Reviews tab wiring
+- [x] Activity tab wiring
+- [x] “My log” panel
 
 ### Browse / search
 - [x] Browse wired to merged local + IGDB-backed search
@@ -246,6 +251,7 @@ Current search decisions:
 - [x] Admin success/error snackbar feedback added
 - [x] Admin create/edit actions have safer loading/disabled states
 - [x] Feed interaction feedback/snackbar path added
+- [x] Game-detail feedback/snackbar path added for review/comment actions
 - [ ] Add a broader shared toast/snackbar pattern across the rest of the app
 - [ ] Tighten form validation / messaging on log + auth pages
 - [ ] Accessibility pass (labels, keyboard flow, aria polish)
@@ -259,7 +265,7 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ### Service tests
 - [ ] `authService`
-- [ ] `gameService`
+- [x] `gameService`
 - [x] `feedService`
 - [ ] `libraryService`
 - [x] `reviewService`
@@ -279,10 +285,12 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [x] Feed comment thread interactions
 - [x] Feed page render + tab behavior
 - [ ] Browse click/import flow
-- [ ] Log form validation
+- [x] Log form validation
+- [x] Log page edit-mode flow
 - [x] Recommend page render
 - [x] Browse page semantic-mode render
 - [x] Member profile page (`/u/[username]`)
+- [x] Game detail page (`/game/[id]`)
 - [ ] Admin dashboard permissions + dialog flows
 - [ ] Profile delete-account flow
 
@@ -304,6 +312,8 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - [ ] Verify the feed tab stays selected after refresh/navigation
 - [ ] Verify follow/unfollow behavior in production
 - [ ] Verify feed like/comment/edit/delete behavior in production
+- [ ] Verify game-detail reviews/activity/my-log flow in production
+- [ ] Verify log-page edit-existing-review flow in production
 - [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production
 - [ ] Verify delete-account redirect/logout flow in production
 

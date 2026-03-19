@@ -67,10 +67,20 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
   - routes directly to `/game/[id]` when a result already exists locally
   - imports automatically through `POST /api/igdb/import/{igdbId}` when needed
   - then routes to the normal local game detail page
-- Live game detail page wired to `GET /api/games/{gameId}`
+- Live game detail page wired to:
+  - `GET /api/games/{gameId}`
+  - `GET /api/games/{gameId}/me`
+  - `GET /api/games/{gameId}/reviews`
+  - `GET /api/games/{gameId}/activity`
+- Game detail page now includes:
+  - real metadata rendering
+  - community **Reviews** tab
+  - community **Activity** tab
+  - dedicated **My log** panel using the current user’s game state
 - Live library page wired to `GET /api/library/me`
 - Log page wired to `POST /api/library`
 - Optional review creation from the log page via `POST /api/reviews`
+- Log page now supports loading and editing an existing log/review for a selected game
 - Live authenticated profile page using `GET /api/auth/me`
 - Self-service delete-account UI on profile wired to `POST /api/auth/delete-account`
 - Admin dashboard with:
@@ -87,6 +97,10 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Local fallback cover asset added for deployment safety
 - Production build succeeds locally
 - Frontend Vitest setup is in place with current service/store/component/page tests
+- Added current test coverage for:
+  - `gameService`
+  - `pages/game/[id].vue`
+  - `pages/log.vue`
 - GitHub Actions CI/CD is configured for frontend deployment
 
 ### Confirmed deployed behavior
@@ -100,8 +114,6 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 
 ### Current known limitations
 - Member profile pages are still **authenticated routes** in the current MVP, not signed-out public pages
-- Game-detail review/activity tabs are not built yet
-- A dedicated “My log” panel on the game-detail page is not built yet
 - Broader frontend test coverage is still incomplete beyond the current covered slices
 - Admin delete-user UI is not currently wired in this repo snapshot
 - AI relevance is currently MVP-level and should improve as the catalog/search metadata gets richer
@@ -160,12 +172,16 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Imported results are normalized back into the standard local `gameId` route flow.
 - Semantic mode allows natural-language discovery against the AI search endpoint.
 
-### Library / logging
-- Library is loaded from live backend data.
-- Logging a game creates/updates the library entry.
-- Review creation is optional from the log workflow.
+### Game detail / logging
+- Game detail metadata loads from `/api/games/{gameId}`.
+- The page loads the current user’s own game state from `/api/games/{gameId}/me`.
+- The page loads community reviews from `/api/games/{gameId}/reviews`.
+- The page loads mixed game activity from `/api/games/{gameId}/activity`.
+- The log page is driven by `gameId` in the query string.
+- Logging a game creates or updates the library entry.
+- Review creation remains optional from the log workflow.
+- Existing log/review state can now be loaded back into the log page for update flows.
 - Ratings continue to come from the library/log model rather than a separate review rating field.
-- The log page is currently driven by `gameId` in the query string.
 
 ### Admin/account management
 - The admin dashboard is role-gated from the frontend and expects the admin endpoints from the API.
@@ -238,78 +254,11 @@ Backlogr.Web/
 ├── middleware/
 ├── pages/
 ├── plugins/
-├── public/
-├── server/
 ├── services/
 ├── stores/
 ├── tests/
 ├── types/
-├── utils/
-├── .env.example
+├── app.vue
 ├── nuxt.config.ts
-├── package.json
-├── tsconfig.json
-└── vitest.config.ts
+└── package.json
 ```
-
----
-
-## Testing
-
-Current frontend coverage includes:
-- service tests for `feedService`, `profileService`, `reviewService`, and `followService`
-- store tests for `authStore`
-- component tests for `FeedReviewCard` and `FeedReviewCommentThread`
-- page test coverage for `/feed`
-- page test coverage for `/browse`
-- page test coverage for `/recommend`
-- page test coverage for `/u/[username]`
-
-This is still partial app coverage, but the current covered slices are passing.
-
----
-
-## Deployment Notes
-
-Current deployment status:
-- Frontend is deployed and working in Azure Static Web Apps.
-- `NUXT_PUBLIC_API_BASE` is configured to use the deployed API.
-- API CORS is configured to allow the deployed frontend origin.
-- GitHub Actions CI/CD is configured for the frontend.
-
-Post-deployment validation already completed for the current deployed build:
-- frontend loads successfully in production
-- API integration works from the deployed frontend
-- core auth/library/feed flows load as expected in production
-- browse is backed by the live catalog/search flow
-- semantic search works in production
-- AI Picks work in production
-- review-assistant actions work in production
-
-Additional production checks still worth re-running when doing final polish:
-- verify follow/unfollow behavior against the deployed API
-- verify feed review like/comment/edit/delete flows against the deployed API
-- verify `/u/[username]` member-profile load for an authenticated user
-- verify `/admin` access control for non-admin vs admin users
-- verify profile delete-account flow against the deployed API
-
----
-
-## Remaining Frontend Work
-
-Recommended next frontend work:
-1. Finish game-detail review/activity wiring.
-2. Add a “My log” panel on the game-detail page.
-3. Expand frontend test coverage beyond the current covered slices.
-4. Add broader shared snackbar/toast patterns where useful.
-5. Do a final accessibility/mobile polish pass.
-6. Decide whether the admin dashboard still needs a delete-user action.
-7. Optionally add tasteful visual polish/motion effects after the core UX pass.
-
----
-
-## Notes
-
-- Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
-- Keep feature claims aligned with what is actually wired in the repo.
-- The frontend now covers the core social/profile/feed MVP slice plus the live AI surfaces, so the best remaining work is polish rather than major feature replacement.
