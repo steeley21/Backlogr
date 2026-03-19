@@ -200,7 +200,7 @@ builder.Services.AddHttpClient<IIgdbService, IgdbService>((serviceProvider, http
 
 builder.Services.AddScoped<IRecommendationService, StubRecommendationService>();
 builder.Services.AddScoped<IReviewAssistantService, StubReviewAssistantService>();
-builder.Services.AddScoped<ISemanticSearchService, StubSemanticSearchService>();
+builder.Services.AddScoped<ISemanticSearchService, AzureSemanticSearchService>();
 
 var app = builder.Build();
 

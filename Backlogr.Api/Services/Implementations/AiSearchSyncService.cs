@@ -21,6 +21,7 @@ public sealed class AiSearchSyncService : IAiSearchSyncService
     {
         var games = await _dbContext.Games
             .AsNoTracking()
+            .Where(game => game.Title != "Test Game")
             .OrderBy(game => game.GameId)
             .ToListAsync(cancellationToken);
 
