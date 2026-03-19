@@ -47,6 +47,35 @@ builder.Services.AddOptions<IgdbOptions>()
         "Igdb:ClientSecret is required.")
     .ValidateOnStart();
 
+builder.Services.AddOptions<OpenAiOptions>()
+    .Bind(builder.Configuration.GetSection(OpenAiOptions.SectionName))
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ApiKey),
+        "OpenAI:ApiKey is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ChatModel),
+        "OpenAI:ChatModel is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.EmbeddingModel),
+        "OpenAI:EmbeddingModel is required.")
+    .ValidateOnStart();
+
+builder.Services.AddOptions<AzureAiSearchOptions>()
+    .Bind(builder.Configuration.GetSection(AzureAiSearchOptions.SectionName))
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.Endpoint),
+        "AzureAiSearch:Endpoint is required.")
+    .Validate(
+        options => Uri.TryCreate(options.Endpoint, UriKind.Absolute, out _),
+        "AzureAiSearch:Endpoint must be a valid absolute URI.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ApiKey),
+        "AzureAiSearch:ApiKey is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.GamesIndexName),
+        "AzureAiSearch:GamesIndexName is required.")
+    .ValidateOnStart();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -151,6 +180,10 @@ builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
 builder.Services.AddScoped<ISuperAdminBootstrapService, SuperAdminBootstrapService>();
+builder.Services.AddScoped<IAiSearchSyncService, AiSearchSyncService>();
+
+builder.Services.AddSingleton<IEmbeddingService, OpenAiEmbeddingService>();
+builder.Services.AddSingleton<IAiSearchIndexService, AzureAiSearchIndexService>();
 
 builder.Services.AddHttpClient<ITwitchTokenService, TwitchTokenService>(httpClient =>
 {
@@ -177,6 +210,12 @@ if (app.Environment.IsDevelopment())
 {
     await DevelopmentDataSeeder.SeedTestGameAsync(app.Services);
     await DevelopmentAdminSeeder.SeedAdminAsync(app.Services, app.Configuration);
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var aiSearchSyncService = scope.ServiceProvider.GetRequiredService<IAiSearchSyncService>();
+    await aiSearchSyncService.BackfillGamesAsync();
 }
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
