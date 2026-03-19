@@ -28,14 +28,12 @@ jobs:
     defaults:
       run:
         working-directory: ./Backlogr.Web
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-          lfs: false
+      - uses: actions/checkout@v5
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -47,8 +45,16 @@ jobs:
       - name: Run frontend tests
         run: npm test
 
-      - name: Verify frontend build
-        run: npm run build
+      - name: Generate static frontend
+        env:
+          NUXT_PUBLIC_API_BASE: ${{ secrets.NUXT_PUBLIC_API_BASE }}
+        run: npm run generate
+
+      - name: Upload generated frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backlogr-static-site
+          path: Backlogr.Web/.output/public
 
   build_and_deploy_job:
     needs: test_frontend
@@ -56,21 +62,22 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
-      - uses: actions/checkout@v4
+      - name: Download generated frontend artifact
+        uses: actions/download-artifact@v4
         with:
-          submodules: true
-          lfs: false
+          name: backlogr-static-site
+          path: ./site
 
-      - name: Build And Deploy
+      - name: Deploy prebuilt static site
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_VICTORIOUS_GRASS_0BB8BF10F }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
-          app_location: 'Backlogr.Web'
-          api_location: 'Backlogr.Web/.output/server'
-          output_location: '.output/public'
+          app_location: './site'
+          output_location: ''
+          skip_app_build: true
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
