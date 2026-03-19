@@ -17,6 +17,7 @@ const authStore = useAuthStore()
 const search = ref('')
 const mobileMenuOpen = ref(false)
 
+// Close mobile menu on route change
 watch(() => route.path, () => {
   mobileMenuOpen.value = false
 })
@@ -38,7 +39,7 @@ const navItems = computed<NavItem[]>(() => {
     { label: 'Feed', to: '/feed' },
     { label: 'Browse', to: '/browse' },
     { label: 'Library', to: '/library' },
-    { label: 'AI Picks', to: '/recommend', icon: 'mdi-sparkles' },
+    { label: 'AI Picks', to: '/recommend', icon: 'mdi-shimmer' },
   ]
 
   if (isAdminUser.value) {
@@ -135,10 +136,9 @@ function mobileTabIcon(path: string): string {
     '/feed': 'mdi-home-variant-outline',
     '/browse': 'mdi-magnify',
     '/library': 'mdi-bookshelf',
-    '/recommend': 'mdi-sparkles',
+    '/recommend': 'mdi-shimmer',
     '/admin': 'mdi-shield-account',
   }
-
   return map[path] ?? 'mdi-circle-outline'
 }
 </script>
@@ -151,6 +151,7 @@ function mobileTabIcon(path: string): string {
       </div>
 
       <template v-if="showAuthenticatedChrome">
+        <!-- Desktop center nav -->
         <div class="center nav desktop-only">
           <v-btn
             v-for="item in navItems"
@@ -162,10 +163,17 @@ function mobileTabIcon(path: string): string {
             rounded="pill"
             :ripple="false"
           >
+            <v-icon
+              v-if="item.icon"
+              :icon="item.icon"
+              size="15"
+              class="mr-1"
+            />
             {{ item.label }}
           </v-btn>
         </div>
 
+        <!-- Desktop right -->
         <div class="right d-flex align-center justify-end desktop-only">
           <v-text-field
             v-model="search"
@@ -213,7 +221,6 @@ function mobileTabIcon(path: string): string {
                   </div>
                 </div>
               </div>
-
               <div class="profile-menu__items">
                 <NuxtLink to="/profile" class="profile-menu__item">
                   <v-icon icon="mdi-tune" size="17" class="profile-menu__item-icon" />
@@ -241,6 +248,7 @@ function mobileTabIcon(path: string): string {
           </v-menu>
         </div>
 
+        <!-- Mobile right: Log + Avatar -->
         <div class="right mobile-right mobile-only">
           <v-btn
             color="primary"
@@ -264,42 +272,16 @@ function mobileTabIcon(path: string): string {
 
       <template v-else>
         <div class="right public-actions d-flex align-center justify-end">
-          <v-btn
-            v-if="authStore.isAuthenticated && isLandingPage"
-            to="/feed"
-            variant="text"
-            rounded="pill"
-            class="text-none"
-          >
+          <v-btn v-if="authStore.isAuthenticated && isLandingPage" to="/feed" variant="text" rounded="pill" class="text-none">
             Open feed
           </v-btn>
-          <v-btn
-            v-else
-            to="/login"
-            variant="text"
-            rounded="pill"
-            class="text-none"
-            :class="{ active: route.path === '/login' }"
-          >
+          <v-btn v-else to="/login" variant="text" rounded="pill" class="text-none" :class="{ active: route.path === '/login' }">
             Sign in
           </v-btn>
-
-          <v-btn
-            v-if="authStore.isAuthenticated && isLandingPage"
-            to="/browse"
-            color="primary"
-            rounded="pill"
-            class="text-none px-5"
-          >
+          <v-btn v-if="authStore.isAuthenticated && isLandingPage" to="/browse" color="primary" rounded="pill" class="text-none px-5">
             Browse games
           </v-btn>
-          <v-btn
-            v-else
-            to="/register"
-            color="primary"
-            rounded="pill"
-            class="text-none px-5"
-          >
+          <v-btn v-else to="/register" color="primary" rounded="pill" class="text-none px-5">
             Create account
           </v-btn>
         </div>
@@ -307,6 +289,7 @@ function mobileTabIcon(path: string): string {
     </div>
   </v-app-bar>
 
+  <!-- Mobile bottom tab bar -->
   <Teleport v-if="showAuthenticatedChrome" to="body">
     <nav class="mobile-tab-bar mobile-only">
       <NuxtLink
@@ -325,6 +308,7 @@ function mobileTabIcon(path: string): string {
       </NuxtLink>
     </nav>
 
+    <!-- Mobile slide-in profile drawer -->
     <Transition name="drawer">
       <div v-if="mobileMenuOpen" class="mobile-drawer-backdrop" @click="mobileMenuOpen = false">
         <div class="mobile-drawer" @click.stop>
@@ -344,6 +328,7 @@ function mobileTabIcon(path: string): string {
             </div>
           </div>
 
+          <!-- Search -->
           <div class="mobile-drawer__search">
             <v-text-field
               v-model="search"
@@ -406,9 +391,7 @@ function mobileTabIcon(path: string): string {
 .appbar::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(168,85,247,0.3) 40%, rgba(168,85,247,0.3) 60%, transparent);
   pointer-events: none;
@@ -432,11 +415,7 @@ function mobileTabIcon(path: string): string {
   .bar-inner {
     grid-template-columns: 200px 1fr 280px;
   }
-
-  .search {
-    max-width: 180px;
-    min-width: 120px;
-  }
+  .search { max-width: 180px; min-width: 120px; }
 }
 
 @media (max-width: 700px) {
@@ -472,44 +451,34 @@ function mobileTabIcon(path: string): string {
 .nav-btn::after {
   content: '';
   position: absolute;
-  bottom: 5px;
-  left: 50%;
+  bottom: 5px; left: 50%;
   transform: translateX(-50%) scaleX(0);
-  width: 16px;
-  height: 2px;
+  width: 16px; height: 2px;
   border-radius: 2px;
   background: var(--primary);
   transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
   opacity: 0;
 }
 
-.nav-btn:hover {
-  color: var(--foreground);
-  background: rgba(255,255,255,0.05) !important;
-}
-
-.nav-btn.active {
-  color: var(--foreground);
-  font-weight: 600;
-  background: transparent !important;
-}
-
-.nav-btn.active::after {
-  transform: translateX(-50%) scaleX(1);
-  opacity: 1;
-}
-
+.nav-btn:hover { color: var(--foreground); background: rgba(255,255,255,0.05) !important; }
+.nav-btn.active { color: var(--foreground); font-weight: 600; background: transparent !important; }
+.nav-btn.active::after { transform: translateX(-50%) scaleX(1); opacity: 1; }
 .nav-btn.ai-picks.active { color: #c084fc; }
 .nav-btn.ai-picks.active::after { background: #c084fc; }
+
+.nav-btn :deep(.v-icon) {
+  opacity: 0.7;
+  transition: opacity 160ms ease;
+}
+.nav-btn:hover :deep(.v-icon),
+.nav-btn.active :deep(.v-icon) {
+  opacity: 1;
+}
 
 /* ─── Search + Log ────────────────────────────────────────── */
 .right { gap: 0; }
 
-.search {
-  max-width: 240px;
-  min-width: 180px;
-}
-
+.search { max-width: 240px; min-width: 180px; }
 .search :deep(.v-field) { font-size: 0.875rem; }
 .search :deep(.v-field__prepend-inner .v-icon) { color: var(--muted-foreground); }
 .search :deep(input::placeholder) { color: color-mix(in srgb, var(--muted-foreground) 70%, transparent); }
@@ -538,144 +507,61 @@ function mobileTabIcon(path: string): string {
   background: rgba(168,85,247,0.1);
   transition: border-color 160ms ease;
 }
-
 .profile-avatar:hover { border-color: rgba(168,85,247,0.35); }
-
-.avatar-fallback {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--foreground);
-}
+.avatar-fallback { font-size: 0.78rem; font-weight: 800; color: var(--foreground); }
 
 /* ─── Desktop profile menu ────────────────────────────────── */
 .profile-menu {
   background: var(--card);
   border: 1px solid rgba(255,255,255,0.09);
   overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(168,85,247,0.08),
-    0 24px 48px rgba(0,0,0,0.55),
-    0 8px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 1px rgba(168,85,247,0.08), 0 24px 48px rgba(0,0,0,0.55), 0 8px 16px rgba(0,0,0,0.3);
 }
 
 .profile-menu__header {
-  position: relative;
-  overflow: hidden;
-  padding: 20px 18px 18px;
+  position: relative; overflow: hidden; padding: 20px 18px 18px;
 }
-
 .profile-menu__header-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 180px 120px at 90% 0%, rgba(168,85,247,0.2), transparent 70%),
-    radial-gradient(ellipse 120px 80px at 0% 100%, rgba(88,28,135,0.15), transparent 60%);
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 180px 120px at 90% 0%, rgba(168,85,247,0.2), transparent 70%),
+              radial-gradient(ellipse 120px 80px at 0% 100%, rgba(88,28,135,0.15), transparent 60%);
   pointer-events: none;
 }
-
 .profile-menu__header-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  content: ''; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
   background-size: 24px 24px;
   mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
 }
-
-.profile-menu__header-content {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
+.profile-menu__header-content { position: relative; display: flex; align-items: center; gap: 13px; }
 .profile-menu__avatar {
   border: 2px solid rgba(168,85,247,0.4);
   background: rgba(168,85,247,0.15);
   box-shadow: 0 0 0 4px rgba(168,85,247,0.08);
   flex-shrink: 0;
 }
-
-.profile-menu__avatar-fallback {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #c084fc;
-  letter-spacing: 0.02em;
-}
-
+.profile-menu__avatar-fallback { font-size: 0.95rem; font-weight: 800; color: #c084fc; letter-spacing: 0.02em; }
 .profile-menu__identity { min-width: 0; }
+.profile-menu__name { font-weight: 700; font-size: 0.95rem; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-menu__subtext { margin-top: 2px; font-size: 0.8rem; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.profile-menu__name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-menu__subtext {
-  margin-top: 2px;
-  font-size: 0.8rem;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-menu__items {
-  padding: 6px 8px 8px;
-}
-
+.profile-menu__items { padding: 6px 8px 8px; }
 .profile-menu__item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 9px 10px; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 500;
   color: color-mix(in srgb, var(--foreground) 75%, transparent);
-  text-decoration: none;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
+  text-decoration: none; background: transparent; border: none;
+  cursor: pointer; text-align: left;
   transition: background 150ms ease, color 150ms ease, transform 150ms ease;
 }
-
-.profile-menu__item:hover {
-  background: rgba(255,255,255,0.06);
-  color: var(--foreground);
-  transform: translateX(2px);
-}
-
-.profile-menu__item-icon {
-  opacity: 0.6;
-  transition: opacity 150ms ease;
-  flex-shrink: 0;
-}
-
+.profile-menu__item:hover { background: rgba(255,255,255,0.06); color: var(--foreground); transform: translateX(2px); }
+.profile-menu__item-icon { opacity: 0.6; transition: opacity 150ms ease; flex-shrink: 0; }
 .profile-menu__item:hover .profile-menu__item-icon { opacity: 1; }
-
-.profile-menu__divider {
-  height: 1px;
-  background: rgba(255,255,255,0.06);
-  margin: 6px 2px;
-}
-
-.profile-menu__item--danger {
-  color: color-mix(in srgb, #f87171 70%, transparent);
-}
-
-.profile-menu__item--danger:hover {
-  background: rgba(248,113,113,0.08);
-  color: #fca5a5;
-}
-
+.profile-menu__divider { height: 1px; background: rgba(255,255,255,0.06); margin: 6px 2px; }
+.profile-menu__item--danger { color: color-mix(in srgb, #f87171 70%, transparent); }
+.profile-menu__item--danger:hover { background: rgba(248,113,113,0.08); color: #fca5a5; }
 .profile-menu__item--danger .profile-menu__item-icon { color: inherit; }
 
 /* ─── Public actions ──────────────────────────────────────── */
@@ -686,9 +572,7 @@ function mobileTabIcon(path: string): string {
 .mobile-tab-bar {
   display: none;
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   z-index: 1000;
   background: rgba(12, 15, 20, 0.94);
   backdrop-filter: blur(20px) saturate(1.5);
@@ -720,7 +604,6 @@ function mobileTabIcon(path: string): string {
 .mobile-tab__icon {
   transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-
 .mobile-tab.active .mobile-tab__icon {
   transform: translateY(-2px);
 }
@@ -753,67 +636,41 @@ function mobileTabIcon(path: string): string {
 }
 
 .mobile-drawer__handle {
-  width: 36px;
-  height: 4px;
+  width: 36px; height: 4px;
   background: rgba(255,255,255,0.15);
   border-radius: 2px;
   margin: 12px auto 0;
 }
 
 .mobile-drawer__header {
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden;
   padding: 20px 20px 16px;
 }
-
 .mobile-drawer__header-bg {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background: radial-gradient(ellipse 240px 120px at 100% 0%, rgba(168,85,247,0.18), transparent 65%);
   pointer-events: none;
 }
-
 .mobile-drawer__header-content {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  position: relative; display: flex; align-items: center; gap: 14px;
 }
-
-.mobile-drawer__name {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--foreground);
-}
-
-.mobile-drawer__subtext {
-  font-size: 0.82rem;
-  color: var(--muted-foreground);
-  margin-top: 2px;
-}
+.mobile-drawer__name { font-weight: 700; font-size: 1rem; color: var(--foreground); }
+.mobile-drawer__subtext { font-size: 0.82rem; color: var(--muted-foreground); margin-top: 2px; }
 
 .mobile-drawer__search {
   padding: 0 12px 4px;
 }
 
 /* ─── Drawer transition ───────────────────────────────────── */
-.drawer-enter-active,
-.drawer-leave-active {
+.drawer-enter-active, .drawer-leave-active {
   transition: opacity 240ms ease;
 }
-
 .drawer-enter-active .mobile-drawer,
 .drawer-leave-active .mobile-drawer {
   transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-.drawer-enter-from,
-.drawer-leave-to {
-  opacity: 0;
-}
-
-.drawer-enter-from .mobile-drawer,
-.drawer-leave-to .mobile-drawer {
+.drawer-enter-from, .drawer-leave-to { opacity: 0; }
+.drawer-enter-from .mobile-drawer, .drawer-leave-to .mobile-drawer {
   transform: translateY(100%);
 }
 </style>

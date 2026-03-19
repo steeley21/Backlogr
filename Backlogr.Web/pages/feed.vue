@@ -255,23 +255,26 @@ watch(
     <v-row align="start" class="content" dense>
       <v-col cols="12" md="8" class="feed-col">
         <div class="section-head">
-          <div class="title">
-            <v-icon :icon="tabIcon" color="primary" size="20" />
-            <span>{{ tabLabel }} Feed</span>
-          </div>
+          <div class="section-head__top">
+            <div class="title">
+              <v-icon :icon="tabIcon" color="primary" size="20" />
+              <span>{{ tabLabel }} Feed</span>
+            </div>
 
-          <div class="section-actions">
             <v-btn
+              icon
               variant="text"
-              rounded="pill"
-              class="text-none"
-              prepend-icon="mdi-refresh"
+              density="comfortable"
               :loading="isLoading"
+              aria-label="Refresh feed"
+              class="refresh-btn"
               @click="loadFeed"
             >
-              Refresh
+              <v-icon icon="mdi-refresh" size="18" />
             </v-btn>
+          </div>
 
+          <div class="section-head__filters">
             <v-btn-toggle
               :model-value="activeTab"
               mandatory
@@ -283,6 +286,8 @@ watch(
               <v-btn value="for-you" class="text-none">For You</v-btn>
               <v-btn value="following" class="text-none">Following</v-btn>
             </v-btn-toggle>
+
+            <div class="filter-divider" />
 
             <v-btn-toggle v-model="filter" mandatory density="comfortable" rounded="pill" class="filter">
               <v-btn value="all" class="text-none">All</v-btn>
@@ -496,22 +501,48 @@ watch(
 
 .section-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 14px;
-  gap: 12px;
 }
 
-.section-head.compact {
-  margin-bottom: 12px;
-}
-
-.section-actions {
+.section-head__top {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+}
+
+.section-head__filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.refresh-btn {
+  color: var(--muted-foreground);
+  transition: color 150ms ease, transform 200ms ease;
+}
+
+.refresh-btn:hover {
+  color: var(--foreground);
+}
+
+/* Spin the icon while loading */
+.refresh-btn :deep(.v-btn__loader) ~ .v-icon,
+.refresh-btn.v-btn--loading :deep(.v-icon) {
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .title {
@@ -619,22 +650,14 @@ watch(
     font-size: 0.88rem;
   }
 
-  .section-head {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .section-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+  .section-head__filters {
     gap: 8px;
   }
 
-  /* Stack filter toggles vertically and let them fill width */
-  .section-actions :deep(.v-btn-toggle) {
-    flex: 1 1 auto;
+  /* Tighten filter buttons on small screens */
+  .filter :deep(.v-btn) {
+    padding-inline: 10px;
+    font-size: 0.8rem;
   }
 
   .stats-grid {

@@ -37,7 +37,7 @@ const featureCards = [
     copy: 'See your own recent logs and reviews first, then build out a social feed as you connect with other players.',
   },
   {
-    icon: 'mdi-sparkles',
+    icon: 'mdi-shimmer',
     title: 'Get AI picks',
     copy: 'Use your logged games and ratings to generate recommendation ideas for what to play next.',
   },
