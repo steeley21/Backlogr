@@ -143,13 +143,8 @@ async function handleLogout(): Promise<void> {
             class="text-none nav-btn"
             :class="{ active: isActive(item.to), 'ai-picks': item.to === '/recommend' }"
             rounded="pill"
+            :ripple="false"
           >
-            <v-icon
-              v-if="item.icon"
-              :icon="item.icon"
-              size="16"
-              class="mr-1"
-            />
             {{ item.label }}
           </v-btn>
         </div>
@@ -197,42 +192,56 @@ async function handleLogout(): Promise<void> {
               </v-btn>
             </template>
 
-            <v-card class="profile-menu" rounded="xl" flat min-width="240">
+            <v-card class="profile-menu" rounded="xl" flat min-width="260">
+              <!-- Header with avatar + gradient bg -->
               <div class="profile-menu__header">
-                <div class="profile-menu__name">{{ profileDisplayName }}</div>
-                <div class="profile-menu__subtext">{{ profileSubtext }}</div>
+                <div class="profile-menu__header-bg" />
+                <div class="profile-menu__header-content">
+                  <v-avatar size="48" class="profile-menu__avatar">
+                    <v-img
+                      v-if="authStore.avatarUrl"
+                      :src="authStore.avatarUrl"
+                      :alt="profileDisplayName"
+                      cover
+                    />
+                    <span v-else class="profile-menu__avatar-fallback">{{ avatarInitials }}</span>
+                  </v-avatar>
+                  <div class="profile-menu__identity">
+                    <div class="profile-menu__name">{{ profileDisplayName }}</div>
+                    <div class="profile-menu__subtext">{{ profileSubtext }}</div>
+                  </div>
+                </div>
               </div>
 
-              <v-divider />
+              <!-- Nav items -->
+              <div class="profile-menu__items">
+                <NuxtLink to="/profile" class="profile-menu__item">
+                  <v-icon icon="mdi-tune" size="17" class="profile-menu__item-icon" />
+                  <span>Account settings</span>
+                </NuxtLink>
 
-              <v-list bg-color="transparent" density="comfortable" nav>
-                <v-list-item
-                  to="/profile"
-                  prepend-icon="mdi-account-outline"
-                  title="Account settings"
-                />
-                <v-list-item
-                  :to="publicProfilePath"
-                  prepend-icon="mdi-account-circle-outline"
-                  title="Public profile"
-                />
-                <v-list-item
-                  to="/library"
-                  prepend-icon="mdi-bookshelf"
-                  title="Library"
-                />
-                <v-list-item
-                  v-if="isAdminUser"
-                  to="/admin"
-                  prepend-icon="mdi-shield-account"
-                  title="Admin"
-                />
-                <v-list-item
-                  prepend-icon="mdi-logout"
-                  title="Sign out"
-                  @click="handleLogout"
-                />
-              </v-list>
+                <NuxtLink :to="publicProfilePath" class="profile-menu__item">
+                  <v-icon icon="mdi-account-circle-outline" size="17" class="profile-menu__item-icon" />
+                  <span>Public profile</span>
+                </NuxtLink>
+
+                <NuxtLink to="/library" class="profile-menu__item">
+                  <v-icon icon="mdi-bookshelf" size="17" class="profile-menu__item-icon" />
+                  <span>Library</span>
+                </NuxtLink>
+
+                <NuxtLink v-if="isAdminUser" to="/admin" class="profile-menu__item">
+                  <v-icon icon="mdi-shield-account" size="17" class="profile-menu__item-icon" />
+                  <span>Admin</span>
+                </NuxtLink>
+
+                <div class="profile-menu__divider" />
+
+                <button class="profile-menu__item profile-menu__item--danger" @click="handleLogout">
+                  <v-icon icon="mdi-logout" size="17" class="profile-menu__item-icon" />
+                  <span>Sign out</span>
+                </button>
+              </div>
             </v-card>
           </v-menu>
         </div>
@@ -327,27 +336,33 @@ async function handleLogout(): Promise<void> {
 
 .nav-btn {
   color: var(--muted-foreground);
-  padding-inline: 14px;
+  padding-inline: 12px;
   min-height: 36px;
+  min-width: unset !important;
   font-size: 0.9rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   position: relative;
-  transition: color 160ms ease, background 160ms ease;
+  transition: color 160ms ease;
+}
+
+/* Kill Vuetify's default active/hover overlay entirely */
+.nav-btn :deep(.v-btn__overlay) {
+  display: none !important;
 }
 
 /* The active underline indicator */
 .nav-btn::after {
   content: '';
   position: absolute;
-  bottom: 4px;
+  bottom: 5px;
   left: 50%;
   transform: translateX(-50%) scaleX(0);
   width: 16px;
   height: 2px;
   border-radius: 2px;
   background: var(--primary);
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
   opacity: 0;
 }
 
@@ -367,24 +382,12 @@ async function handleLogout(): Promise<void> {
   opacity: 1;
 }
 
-/* Special treatment for AI Picks — subtle purple tint when active */
 .nav-btn.ai-picks.active {
   color: #c084fc;
 }
 
 .nav-btn.ai-picks.active::after {
   background: #c084fc;
-  width: 20px;
-}
-
-.nav-btn.ai-picks :deep(.v-icon) {
-  opacity: 0.75;
-  transition: opacity 160ms ease;
-}
-
-.nav-btn.ai-picks:hover :deep(.v-icon),
-.nav-btn.ai-picks.active :deep(.v-icon) {
-  opacity: 1;
 }
 
 .search {
@@ -427,23 +430,142 @@ async function handleLogout(): Promise<void> {
 
 .profile-menu {
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.09);
   overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(168, 85, 247, 0.08),
+    0 24px 48px rgba(0,0,0,0.55),
+    0 8px 16px rgba(0,0,0,0.3);
 }
 
+/* Header */
 .profile-menu__header {
-  padding: 14px 16px 12px;
+  position: relative;
+  overflow: hidden;
+  padding: 20px 18px 18px;
+}
+
+.profile-menu__header-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 180px 120px at 90% 0%, rgba(168, 85, 247, 0.2), transparent 70%),
+    radial-gradient(ellipse 120px 80px at 0% 100%, rgba(88, 28, 135, 0.15), transparent 60%);
+  pointer-events: none;
+}
+
+/* Subtle grid texture in header */
+.profile-menu__header-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+}
+
+.profile-menu__header-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.profile-menu__avatar {
+  border: 2px solid rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.08);
+  flex-shrink: 0;
+}
+
+.profile-menu__avatar-fallback {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #c084fc;
+  letter-spacing: 0.02em;
+}
+
+.profile-menu__identity {
+  min-width: 0;
 }
 
 .profile-menu__name {
   font-weight: 700;
+  font-size: 0.95rem;
   color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .profile-menu__subtext {
-  margin-top: 4px;
-  font-size: 0.88rem;
+  margin-top: 2px;
+  font-size: 0.8rem;
   color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Nav items */
+.profile-menu__items {
+  padding: 6px 8px 8px;
+}
+
+.profile-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+  position: relative;
+}
+
+.profile-menu__item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--foreground);
+  transform: translateX(2px);
+}
+
+.profile-menu__item-icon {
+  opacity: 0.6;
+  transition: opacity 150ms ease, color 150ms ease;
+  flex-shrink: 0;
+}
+
+.profile-menu__item:hover .profile-menu__item-icon {
+  opacity: 1;
+}
+
+.profile-menu__divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 6px 2px;
+}
+
+.profile-menu__item--danger {
+  color: color-mix(in srgb, #f87171 70%, transparent);
+}
+
+.profile-menu__item--danger:hover {
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+}
+
+.profile-menu__item--danger .profile-menu__item-icon {
+  color: inherit;
 }
 
 .public-actions {
