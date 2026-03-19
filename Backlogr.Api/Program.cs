@@ -1,6 +1,3 @@
-using System;
-using System.Text;
-using System.Text.Json.Serialization;
 using Backlogr.Api.Data;
 using Backlogr.Api.Extensions;
 using Backlogr.Api.Models.Entities;
@@ -13,6 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -198,9 +199,19 @@ builder.Services.AddHttpClient<IIgdbService, IgdbService>((serviceProvider, http
     httpClient.Timeout = TimeSpan.FromSeconds(20);
 });
 
-builder.Services.AddScoped<IRecommendationService, StubRecommendationService>();
-builder.Services.AddScoped<IReviewAssistantService, StubReviewAssistantService>();
+builder.Services.AddScoped<IRecommendationService, AzureRecommendationService>();
 builder.Services.AddScoped<ISemanticSearchService, AzureSemanticSearchService>();
+
+builder.Services.AddHttpClient<IReviewAssistantService, OpenAiReviewAssistantService>(
+    (serviceProvider, httpClient) =>
+    {
+        var openAiOptions = serviceProvider.GetRequiredService<IOptions<OpenAiOptions>>().Value;
+
+        httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", openAiOptions.ApiKey);
+        httpClient.Timeout = TimeSpan.FromSeconds(30);
+    });
 
 var app = builder.Build();
 
