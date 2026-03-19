@@ -13,10 +13,12 @@ namespace Backlogr.Api.Controllers;
 public sealed class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
+    private readonly IDemoSeedService _demoSeedService;
 
-    public AdminController(IAdminService adminService)
+    public AdminController(IAdminService adminService, IDemoSeedService demoSeedService)
     {
         _adminService = adminService;
+        _demoSeedService = demoSeedService;
     }
 
     [HttpGet("users")]
@@ -53,6 +55,32 @@ public sealed class AdminController : ControllerBase
         catch (UnauthorizedAccessException)
         {
             return Forbid();
+        }
+    }
+
+    [HttpPost("demo/seed")]
+    public async Task<ActionResult<AdminDemoSeedResponseDto>> SeedDemoData(
+        [FromBody] AdminDemoSeedRequestDto? dto,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var result = await _demoSeedService.SeedAsync(currentUserId.Value, dto, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
         }
     }
 

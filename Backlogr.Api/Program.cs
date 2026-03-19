@@ -38,6 +38,9 @@ builder.Services.Configure<JwtOptions>(
 builder.Services.Configure<BootstrapSuperAdminOptions>(
     builder.Configuration.GetSection(BootstrapSuperAdminOptions.SectionName));
 
+builder.Services.Configure<DemoSeedOptions>(
+    builder.Configuration.GetSection(DemoSeedOptions.SectionName));
+
 builder.Services.AddOptions<IgdbOptions>()
     .Bind(builder.Configuration.GetSection(IgdbOptions.SectionName))
     .Validate(
@@ -180,6 +183,7 @@ builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGameDetailsService, GameDetailsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IDemoSeedService, DemoSeedService>();
 builder.Services.AddScoped<IUserDeletionService, UserDeletionService>();
 builder.Services.AddScoped<ISuperAdminBootstrapService, SuperAdminBootstrapService>();
 builder.Services.AddScoped<IAiSearchSyncService, AiSearchSyncService>();
