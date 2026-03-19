@@ -31,4 +31,10 @@
 .app-container {
   max-width: 1100px;
 }
+
+@media (max-width: 700px) {
+  .app-container {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  }
+}
 </style>

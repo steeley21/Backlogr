@@ -581,13 +581,47 @@ watch(
 :deep(.v-col:nth-child(12)) { animation-delay: 220ms; }
 
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .browse-toolbar {
+    padding: 16px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .browse-toolbar__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* Mode toggle fills full width */
+  .browse-toolbar__row :deep(.v-btn-toggle) {
+    width: 100%;
+  }
+
+  .browse-toolbar__row :deep(.v-btn-toggle .v-btn) {
+    flex: 1;
+  }
+
+  .browse-search-panel__controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .browse-search-panel__input {
+    flex: none;
+    width: 100%;
+  }
+
+  /* Search + buttons stack full width */
+  .browse-search-panel__controls :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .empty-state {
+    padding: 20px;
   }
 }
 </style>

@@ -392,20 +392,69 @@ const steps = [
 }
 
 @media (max-width: 600px) {
-  .hero-grid,
+  .hero-grid {
+    padding: 24px 20px;
+    gap: 20px;
+  }
+
   .section-card,
   .closing-card {
     padding: 20px;
   }
 
   .hero-title {
-    font-size: 1.9rem;
+    font-size: 1.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
   }
 
   .hero-actions,
   .closing-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .hero-actions :deep(.v-btn),
+  .closing-actions :deep(.v-btn) {
+    width: 100%;
+  }
+
+  /* Collapse hero panel into a horizontal scroll row */
+  .hero-panel {
+    padding: 16px;
+  }
+
+  .panel-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .stat-card {
+    padding: 12px 10px;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    margin-top: 4px;
+  }
+
+  .feature-card {
+    padding: 14px;
+  }
+
+  .closing-grid {
+    gap: 20px;
   }
 }
 </style>

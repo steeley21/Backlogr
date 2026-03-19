@@ -547,15 +547,21 @@ watch(
 
 @media (max-width: 700px) {
   .hero-card {
-    padding: 18px;
+    padding: 16px;
   }
 
   .identity-block {
     grid-template-columns: 1fr;
   }
 
+  .avatar {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
   .identity-row {
     flex-direction: column;
+    gap: 10px;
   }
 
   .identity-actions {
@@ -563,12 +569,39 @@ watch(
   }
 
   .stats-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .stat-number {
+    font-size: 1.25rem;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .profile-tab-bar {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .profile-tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 10px;
+    font-size: 0.82rem;
   }
 
   .summary-row {
     flex-direction: column;
     align-items: flex-start;
+    gap: 4px;
   }
 }
 </style>

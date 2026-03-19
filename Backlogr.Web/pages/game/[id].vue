@@ -858,4 +858,44 @@ watch(
     padding: 28px 24px;
   }
 }
+
+@media (max-width: 600px) {
+  .hero {
+    min-height: 200px;
+  }
+
+  .hero-inner {
+    padding: 22px 18px;
+  }
+
+  .hero-inner :deep(.text-h4) {
+    font-size: 1.4rem !important;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  /* Hide the summary text on mobile, keep just the toggle */
+  .tabs-summary {
+    display: none;
+  }
+
+  .tabs-row {
+    justify-content: flex-start;
+  }
+
+  .filter :deep(.v-btn) {
+    padding-inline: 12px;
+    font-size: 0.82rem;
+  }
+
+  .meta-card {
+    padding: 12px;
+  }
+
+  .empty-state {
+    padding: 16px;
+  }
+}
 </style>
