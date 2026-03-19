@@ -28,15 +28,22 @@ const statusOptions: LibraryStatus[] = [
 type AssistantAction = {
   label: string
   mode: ReviewAssistantMode
+  icon: string
   requiresExistingText?: boolean
 }
 
 const assistantActions: AssistantAction[] = [
-  { label: 'Draft', mode: 'draft' },
-  { label: 'Rewrite', mode: 'rewrite', requiresExistingText: true },
-  { label: 'Shorten', mode: 'shorten', requiresExistingText: true },
-  { label: 'Expand', mode: 'expand', requiresExistingText: true },
-  { label: 'Spoiler-safe', mode: 'spoiler-safe-summary', requiresExistingText: true },
+  { label: 'Draft', mode: 'draft', icon: 'mdi-file-document-edit-outline' },
+  { label: 'Rewrite', mode: 'rewrite', icon: 'mdi-pencil-outline', requiresExistingText: true },
+  { label: 'Shorten', mode: 'shorten', icon: 'mdi-arrow-collapse-horizontal', requiresExistingText: true },
+  { label: 'Expand', mode: 'expand', icon: 'mdi-arrow-expand-horizontal', requiresExistingText: true },
+  { label: 'Spoiler-safe', mode: 'spoiler-safe-summary', icon: 'mdi-shield-half-full', requiresExistingText: true },
+]
+
+const assistantExamples = [
+  'Focus on the combat and pacing.',
+  'Make this more concise and less repetitive.',
+  'Keep the same opinion, but make it smoother.',
 ]
 
 const game = ref<GameDetailResponseDto | null>(null)
@@ -146,6 +153,10 @@ function getAssistantErrorMessage(error: unknown): string {
   }
 
   return 'Unable to run the review assistant right now. Please try again.'
+}
+
+function applyAssistantExample(example: string): void {
+  assistantPrompt.value = example
 }
 
 async function loadGame(): Promise<void> {
@@ -410,10 +421,19 @@ watch(
             <div>
               <div class="text-subtitle-1 font-weight-bold mb-1">Public review</div>
               <div class="muted">
-                Draft or improve your review with the AI assistant before saving.
+                Use the AI assistant to draft, rewrite, shorten, expand, or make your review spoiler-safe before saving.
               </div>
             </div>
           </div>
+
+          <v-alert
+            type="info"
+            variant="tonal"
+            rounded="lg"
+            class="mt-4"
+          >
+            Draft works best from a prompt. The other actions work best when you already have review text written.
+          </v-alert>
 
           <v-alert
             v-if="assistantErrorMessage"
@@ -437,19 +457,45 @@ watch(
             placeholder="Example: Focus on the combat, pacing, and whether the ending worked."
           />
 
-          <div class="assistant-actions mt-3">
-            <v-btn
-              v-for="action in assistantActions"
-              :key="action.mode"
-              variant="text"
-              rounded="pill"
-              class="text-none"
-              :loading="isRunningAssistant"
-              :disabled="isRunningAssistant"
-              @click="handleAssistant(action)"
+          <div class="assistant-examples mt-3">
+            <span class="assistant-examples__label">Try:</span>
+
+            <v-chip
+              v-for="example in assistantExamples"
+              :key="example"
+              size="small"
+              variant="outlined"
+              class="mr-2 mb-2"
+              @click="applyAssistantExample(example)"
             >
-              {{ action.label }}
-            </v-btn>
+              {{ example }}
+            </v-chip>
+          </div>
+
+          <div class="assistant-tools mt-4">
+            <div class="assistant-tools__header">
+              <div class="assistant-tools__title">Assistant tools</div>
+              <div class="assistant-tools__hint">
+                Pick an action to generate or improve your review.
+              </div>
+            </div>
+
+            <div class="assistant-actions mt-3">
+              <v-btn
+                v-for="action in assistantActions"
+                :key="action.mode"
+                variant="tonal"
+                color="primary"
+                rounded="pill"
+                class="text-none assistant-action-btn"
+                :prepend-icon="action.icon"
+                :loading="isRunningAssistant"
+                :disabled="isRunningAssistant"
+                @click="handleAssistant(action)"
+              >
+                {{ action.label }}
+              </v-btn>
+            </div>
           </div>
 
           <v-textarea
@@ -461,6 +507,7 @@ watch(
             variant="solo-filled"
             rounded="xl"
             hide-details="auto"
+            placeholder="Write your review here, or use the assistant to help draft one."
           />
 
           <v-checkbox
@@ -560,6 +607,47 @@ watch(
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.assistant-examples__label {
+  display: inline-block;
+  margin-right: 10px;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+
+.assistant-tools {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.assistant-tools__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assistant-tools__title {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.assistant-tools__hint {
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+
+.assistant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.assistant-action-btn {
+  min-height: 40px;
 }
 
 .muted {
