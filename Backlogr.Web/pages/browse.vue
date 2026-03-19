@@ -347,12 +347,12 @@ watch(
 
       <div class="browse-search-panel mt-4">
         <div class="browse-search-panel__heading">
-          {{ isSemanticMode ? 'What kind of game are you looking for?' : 'Search the game catalog' }}
+          {{ isSemanticMode ? 'What kind of game are you looking for?' : '' }}
         </div>
         <div class="browse-search-panel__subheading">
           {{ isSemanticMode
             ? 'Use vibe-based language like cozy, story rich, difficult, relaxing, or sci fi.'
-            : 'Search by title, genre, platform, or general keyword.' }}
+            : '' }}
         </div>
 
         <div class="browse-search-panel__controls">
@@ -471,7 +471,20 @@ watch(
 .browse-toolbar {
   background: var(--card);
   border: 1px solid var(--border);
-  padding: 20px;
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.browse-toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.4), transparent);
+  pointer-events: none;
 }
 
 .browse-toolbar__row {
@@ -485,11 +498,13 @@ watch(
 .browse-toolbar__title {
   font-weight: 700;
   color: var(--foreground);
+  font-size: 0.95rem;
 }
 
 .browse-toolbar__description {
   margin-top: 4px;
   color: var(--muted-foreground);
+  font-size: 0.88rem;
 }
 
 .browse-search-panel {
@@ -497,14 +512,16 @@ watch(
 }
 
 .browse-search-panel__heading {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--foreground);
+  letter-spacing: -0.01em;
 }
 
 .browse-search-panel__subheading {
-  margin-top: 6px;
+  margin-top: 5px;
   color: var(--muted-foreground);
+  font-size: 0.88rem;
 }
 
 .browse-search-panel__controls {
@@ -527,13 +544,14 @@ watch(
   display: inline-block;
   margin-right: 10px;
   color: var(--muted-foreground);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .empty-state {
   background: var(--card);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: 32px;
+  text-align: center;
 }
 
 .muted {
@@ -542,5 +560,34 @@ watch(
 
 .browse-skeleton {
   background: transparent;
+}
+
+/* Staggered fade-in for the game grid */
+:deep(.v-col) {
+  animation: fadeUp 320ms ease both;
+}
+
+:deep(.v-col:nth-child(1))  { animation-delay: 20ms; }
+:deep(.v-col:nth-child(2))  { animation-delay: 45ms; }
+:deep(.v-col:nth-child(3))  { animation-delay: 70ms; }
+:deep(.v-col:nth-child(4))  { animation-delay: 95ms; }
+:deep(.v-col:nth-child(5))  { animation-delay: 115ms; }
+:deep(.v-col:nth-child(6))  { animation-delay: 135ms; }
+:deep(.v-col:nth-child(7))  { animation-delay: 155ms; }
+:deep(.v-col:nth-child(8))  { animation-delay: 170ms; }
+:deep(.v-col:nth-child(9))  { animation-delay: 185ms; }
+:deep(.v-col:nth-child(10)) { animation-delay: 200ms; }
+:deep(.v-col:nth-child(11)) { animation-delay: 210ms; }
+:deep(.v-col:nth-child(12)) { animation-delay: 220ms; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

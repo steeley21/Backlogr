@@ -80,14 +80,38 @@ const avatarInitials = computed(() => {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius) !important;
-  padding: 16px 18px;
-  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  padding: 16px 18px 0;
+  transition: border-color 200ms ease, transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 200ms ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(168, 85, 247, 0), rgba(168, 85, 247, 0));
+  transition: background 250ms ease;
+  border-radius: 2px 0 0 2px;
 }
 
 .card:hover {
-  border-color: rgba(168, 85, 247, 0.22);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
-  transform: translateY(-1px);
+  border-color: rgba(168, 85, 247, 0.28);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(168, 85, 247, 0.08);
+  transform: translateY(-2px);
+}
+
+.card:hover::before {
+  background: linear-gradient(to bottom, rgba(168, 85, 247, 0.8), rgba(168, 85, 247, 0.2));
+}
+
+.card:hover .thumb {
+  opacity: 1;
+  transform: scale(1.03);
+  border-color: rgba(168, 85, 247, 0.3);
 }
 
 .top-row {
@@ -105,10 +129,16 @@ const avatarInitials = computed(() => {
   text-decoration: none;
 }
 
+.avatar :deep(.v-avatar) {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1.5px solid rgba(168, 85, 247, 0.25);
+}
+
 .avatar-fallback {
-  color: var(--foreground);
-  font-size: 0.85rem;
+  color: var(--primary);
+  font-size: 0.82rem;
   font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .content {
@@ -120,59 +150,68 @@ const avatarInitials = computed(() => {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+  font-size: 0.94rem;
 }
 
 .name-link {
-  font-weight: 650;
+  font-weight: 700;
   color: var(--foreground);
   text-decoration: none;
+  transition: color 150ms ease;
 }
 
 .name-link:hover {
-  text-decoration: underline;
+  color: var(--primary);
 }
 
 .subline {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 6px;
   flex-wrap: wrap;
 }
 
 .muted {
   color: var(--muted-foreground);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .status {
   color: var(--primary);
-  font-weight: 650;
+  font-weight: 700;
+  font-size: 0.92rem;
+  background: rgba(168, 85, 247, 0.1);
+  padding: 1px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
 }
 
 .game-link {
   color: var(--foreground);
   text-decoration: none;
   font-weight: 600;
+  transition: color 150ms ease;
 }
 
 .game-link:hover {
-  text-decoration: underline;
+  color: #d8b4fe;
 }
 
 .thumb {
   width: 44px;
-  height: 56px;
+  height: 58px;
   flex: 0 0 auto;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  opacity: 0.95;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 0.85;
+  transition: opacity 200ms ease, transform 200ms ease, border-color 200ms ease;
 }
 
 .divider {
-  margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 </style>

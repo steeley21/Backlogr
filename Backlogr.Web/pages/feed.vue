@@ -413,21 +413,38 @@ watch(
 
 .hero {
   position: relative;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(168, 85, 247, 0.15);
   border-radius: calc(var(--radius) + 4px) !important;
   overflow: hidden;
-  min-height: 220px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  min-height: 230px;
+  box-shadow:
+    0 0 0 1px rgba(168, 85, 247, 0.06),
+    0 24px 56px rgba(0, 0, 0, 0.5),
+    0 4px 16px rgba(168, 85, 247, 0.08);
   background:
-    radial-gradient(900px 320px at 20% 10%, rgba(168, 85, 247, 0.18), transparent 55%),
-    linear-gradient(135deg, rgba(20, 24, 28, 0.96), rgba(28, 34, 40, 0.94));
+    radial-gradient(ellipse 800px 300px at 15% 0%, rgba(168, 85, 247, 0.22), transparent 60%),
+    radial-gradient(ellipse 400px 200px at 85% 100%, rgba(88, 28, 135, 0.18), transparent 55%),
+    linear-gradient(145deg, #131720 0%, #0f1217 100%);
+}
+
+/* Subtle grid overlay for texture */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom right, rgba(0,0,0,0.6), transparent 60%);
+  pointer-events: none;
 }
 
 .hero::after {
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: calc(var(--radius) + 4px);
   pointer-events: none;
 }
@@ -436,35 +453,38 @@ watch(
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(600px 220px at 80% 0%, rgba(168, 85, 247, 0.12), transparent 60%);
+    radial-gradient(500px 180px at 90% 10%, rgba(168, 85, 247, 0.1), transparent 60%);
 }
 
 .hero-inner {
   position: relative;
-  padding: 36px 36px;
-  max-width: 640px;
+  padding: 40px 40px;
+  max-width: 660px;
 }
 
 .overline {
   color: var(--primary);
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  font-size: 0.75rem;
-  margin-bottom: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  font-size: 0.7rem;
+  margin-bottom: 12px;
+  text-transform: uppercase;
 }
 
 .hero-title {
-  font-size: 2.2rem;
+  font-size: 2.3rem;
   font-weight: 800;
   line-height: 1.05;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--foreground);
+  letter-spacing: -0.02em;
 }
 
 .hero-sub {
-  max-width: 560px;
-  line-height: 1.55;
-  margin-bottom: 18px;
+  max-width: 520px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
 }
 
 .hero-actions {
@@ -499,6 +519,7 @@ watch(
   align-items: center;
   gap: 8px;
   font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .filter {
@@ -508,7 +529,7 @@ watch(
 .stats-card,
 .info-card,
 .empty-state {
-  background: color-mix(in srgb, var(--card) 88%, black);
+  background: var(--card);
   border: 1px solid var(--border);
 }
 
@@ -518,31 +539,42 @@ watch(
 }
 
 .rail-block + .rail-block {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .stat {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 18px;
-  padding: 14px;
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.stat:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.22);
 }
 
 .num {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
   font-weight: 800;
   color: var(--foreground);
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .label,
 .muted {
   color: var(--muted-foreground);
+  font-size: 0.82rem;
+  margin-top: 3px;
 }
 
 .empty-state {
@@ -550,7 +582,8 @@ watch(
 }
 
 .info-copy {
-  line-height: 1.6;
+  line-height: 1.65;
+  font-size: 0.9rem;
 }
 
 .feed-skeleton {
@@ -560,7 +593,7 @@ watch(
 
 @media (max-width: 960px) {
   .hero-inner {
-    padding: 28px 24px;
+    padding: 30px 26px;
   }
 
   .hero-title {

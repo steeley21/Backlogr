@@ -141,14 +141,14 @@ async function handleLogout(): Promise<void> {
             :to="item.to"
             variant="text"
             class="text-none nav-btn"
-            :class="{ active: isActive(item.to) }"
+            :class="{ active: isActive(item.to), 'ai-picks': item.to === '/recommend' }"
             rounded="pill"
           >
             <v-icon
               v-if="item.icon"
               :icon="item.icon"
-              size="18"
-              class="mr-2"
+              size="16"
+              class="mr-1"
             />
             {{ item.label }}
           </v-btn>
@@ -288,48 +288,112 @@ async function handleLogout(): Promise<void> {
 
 <style scoped>
 .appbar {
-  background: rgba(20, 24, 28, 0.78);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(12, 15, 20, 0.82);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Subtle purple shimmer line at top of bar */
+.appbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(168, 85, 247, 0.3) 40%, rgba(168, 85, 247, 0.3) 60%, transparent 100%);
+  pointer-events: none;
 }
 
 .bar-inner {
   width: min(1100px, calc(100% - 48px));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 220px 1fr 380px;
+  grid-template-columns: 200px 1fr 380px;
   align-items: center;
   gap: 16px;
 }
 
 .bar-inner.public-mode {
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 200px 1fr;
 }
 
 .nav {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  align-items: center;
+  gap: 2px;
 }
 
 .nav-btn {
-  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  color: var(--muted-foreground);
   padding-inline: 14px;
-  min-height: 38px;
+  min-height: 36px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  position: relative;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+/* The active underline indicator */
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
+  opacity: 0;
 }
 
 .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
 .nav-btn.active {
-  background: rgba(255, 255, 255, 0.10);
   color: var(--foreground);
+  font-weight: 600;
+  background: transparent !important;
+}
+
+.nav-btn.active::after {
+  transform: translateX(-50%) scaleX(1);
+  opacity: 1;
+}
+
+/* Special treatment for AI Picks — subtle purple tint when active */
+.nav-btn.ai-picks.active {
+  color: #c084fc;
+}
+
+.nav-btn.ai-picks.active::after {
+  background: #c084fc;
+  width: 20px;
+}
+
+.nav-btn.ai-picks :deep(.v-icon) {
+  opacity: 0.75;
+  transition: opacity 160ms ease;
+}
+
+.nav-btn.ai-picks:hover :deep(.v-icon),
+.nav-btn.ai-picks.active :deep(.v-icon) {
+  opacity: 1;
 }
 
 .search {
-  max-width: 280px;
-  min-width: 200px;
+  max-width: 240px;
+  min-width: 180px;
+}
+
+.search :deep(.v-field) {
+  font-size: 0.875rem;
 }
 
 .search :deep(.v-field__prepend-inner .v-icon) {
@@ -337,20 +401,26 @@ async function handleLogout(): Promise<void> {
 }
 
 .search :deep(input::placeholder) {
-  color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
 }
 
 .log-btn {
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.25);
+  font-size: 0.875rem;
 }
 
 .profile-avatar {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(168, 85, 247, 0.1);
+  transition: border-color 160ms ease;
+}
+
+.profile-avatar:hover {
+  border-color: rgba(168, 85, 247, 0.35);
 }
 
 .avatar-fallback {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
   color: var(--foreground);
 }
@@ -372,7 +442,7 @@ async function handleLogout(): Promise<void> {
 
 .profile-menu__subtext {
   margin-top: 4px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--muted-foreground);
 }
 
@@ -381,7 +451,6 @@ async function handleLogout(): Promise<void> {
 }
 
 .public-actions .active {
-  background: rgba(255, 255, 255, 0.10);
   color: var(--foreground);
 }
 
@@ -415,8 +484,8 @@ async function handleLogout(): Promise<void> {
   }
 
   .search {
-    max-width: 220px;
-    min-width: 160px;
+    max-width: 200px;
+    min-width: 140px;
   }
 }
 
