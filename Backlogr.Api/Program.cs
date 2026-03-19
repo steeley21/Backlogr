@@ -223,8 +223,11 @@ if (app.Environment.IsDevelopment())
     await DevelopmentAdminSeeder.SeedAdminAsync(app.Services, app.Configuration);
 }
 
-using (var scope = app.Services.CreateScope())
+var runAiBackfillOnStartup = app.Configuration.GetValue<bool>("AiSearch:RunBackfillOnStartup");
+
+if (runAiBackfillOnStartup)
 {
+    using var scope = app.Services.CreateScope();
     var aiSearchSyncService = scope.ServiceProvider.GetRequiredService<IAiSearchSyncService>();
     await aiSearchSyncService.BackfillGamesAsync();
 }
