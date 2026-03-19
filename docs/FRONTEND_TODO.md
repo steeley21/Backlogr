@@ -1,8 +1,8 @@
 # FRONTEND_TODO — Backlogr.Web
 
-Last updated: 2026-03-18
+Last updated: 2026-03-19
 
-This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, the new **For You / Following** feed split, and the AI/frontend wiring pass for browse semantic search and live recommendation/review-assistant flows.
+This checklist reflects the current integrated frontend state after the landing-page/admin/account-management pass, the member-profile/feed-social feature pass, the **For You / Following** feed split, and the deployed AI/frontend wiring for browse semantic search and live recommendation/review-assistant flows.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -26,12 +26,16 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed flow loads in deployed environment
 - [x] Frontend can reach deployed API successfully
 - [x] Browse is backed by the live merged catalog/search flow
+- [x] Semantic search works in production
+- [x] Recommendation page works in production
+- [x] Review-assistant actions work in production
 
-### Latest local codebase additions ready for next deploy / smoke test
+### Recently completed frontend additions
 - [x] Public landing page at `/`
 - [x] Authenticated feed moved to `/feed`
 - [x] Admin dashboard route and role-gated navigation
-- [x] Admin user list/create/edit/delete flows
+- [x] Admin user list/create flows
+- [x] Role-edit flow for `SuperAdmin`
 - [x] Profile delete-account flow
 - [x] Member profile route at `/u/[username]`
 - [x] Follow / unfollow UI
@@ -47,14 +51,11 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Recommend page Vitest coverage
 
 ### Current known limitations
-- [x] Member profile route is built
-- [x] Follow/unfollow UI is built
-- [x] Review edit/delete UI is built
-- [x] Feed like/comment UI is built
-- [x] Feed split UI is built locally and covered by tests
-- [x] Semantic search UI is built
 - [ ] Frontend test coverage is still partial beyond the current covered slices
 - [ ] Member profiles are still authenticated routes rather than signed-out public pages
+- [ ] Game-detail review/activity tabs are not built yet
+- [ ] “My log” panel on the game-detail page is not built yet
+- [ ] Admin delete-user UI is not currently wired in this repo snapshot
 
 ---
 
@@ -192,7 +193,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Create-user dialog wired to API
 - [x] Search + role filter
 - [x] `SuperAdmin` role edit dialog
-- [x] Delete-user dialog
+- [ ] Delete-user dialog / action
 - [ ] User-list pagination
 - [ ] Optional richer audit/help text if needed for final demo
 
@@ -243,12 +244,12 @@ Current search decisions:
 
 - [x] Basic loading/empty/error states are present on core wired pages
 - [x] Admin success/error snackbar feedback added
-- [x] Admin create/edit/delete actions have safer loading/disabled states
+- [x] Admin create/edit actions have safer loading/disabled states
 - [x] Feed interaction feedback/snackbar path added
 - [ ] Add a broader shared toast/snackbar pattern across the rest of the app
 - [ ] Tighten form validation / messaging on log + auth pages
 - [ ] Accessibility pass (labels, keyboard flow, aria polish)
-- [ ] Mobile UX pass after next deploy verification
+- [ ] Mobile UX pass
 
 ---
 
@@ -287,14 +288,20 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 
 ---
 
-## 8) Deployment readiness checklist (frontend side)
+## 8) Production verification
 
-- [ ] Rebuild and deploy frontend with the latest AI/browse updates
-- [ ] Smoke test `/`, `/feed?tab=for-you`, `/feed?tab=following`, `/browse`, `/recommend`, `/log?gameId=...`, `/u/[username]`, `/admin`, and `/profile` against production API
-- [ ] Verify feed tab state persists after refresh/navigation in production
-- [ ] Verify semantic search mode works in production browse
-- [ ] Verify recommendation page returns live recommendations in production
-- [ ] Verify review-assistant actions work from the log page in production
+### Completed production checks
+- [x] Frontend is deployed with the latest AI/browse updates
+- [x] `/browse` semantic mode works against production
+- [x] `/recommend` returns live recommendations in production
+- [x] Review-assistant actions work from the log page in production
+- [x] Frontend loads successfully against the deployed API
+- [x] Core auth/library/feed flows load as expected in production
+
+### Additional production checks worth re-running
+- [ ] Verify `/feed?tab=for-you` loads the broader feed correctly
+- [ ] Verify `/feed?tab=following` loads followed-user + self activity correctly
+- [ ] Verify the feed tab stays selected after refresh/navigation
 - [ ] Verify follow/unfollow behavior in production
 - [ ] Verify feed like/comment/edit/delete behavior in production
 - [ ] Verify admin visibility rules for User/Admin/SuperAdmin in production
@@ -308,7 +315,7 @@ Requirement: “Unit tests cover core functionality for the front end and back e
 - Improve the visual separation between the feed-source tabs and the local `All / Reviews / Logs` filter
 - Evaluate whether a lightweight feed snapshot or feed-type count row should become interactive
 - Add paging or incremental loading once the feed gets larger
-- Revisit the empty-state copy after production smoke testing with real user data
+- Revisit the empty-state copy after more real user data accumulates
 
 ### Visual polish / motion pass
 - Explore adding tasteful visual enhancements inspired by **React Bits**
@@ -321,16 +328,7 @@ Requirement: “Unit tests cover core functionality for the front end and back e
   - page section transitions
 - Verify that any new animation or interaction still performs well on mobile
 
----
-
-## DevOps / CI Improvements
-
-### Speed up Static Web App workflow
-- Review the Azure Static Web Apps GitHub Actions workflow for unnecessary wait time
-- Investigate why the most recent frontend deploy took ~17 minutes
-- Check for opportunities to improve:
-  - dependency caching
-  - redundant install/build steps
-  - unnecessary full rebuilds
-  - workflow trigger scope
-- Confirm the workflow still runs required frontend tests/build checks before deploy
+### DevOps / CI Improvements
+- Keep the Static Web App workflow lean
+- Re-check deploy duration only if it regresses again
+- Confirm the workflow still runs the required frontend tests/build checks before deploy

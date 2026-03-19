@@ -1,8 +1,8 @@
 # BACKEND_TODO — Backlogr.Api
 
-Last updated: 2026-03-18
+Last updated: 2026-03-19
 
-This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, the **For You / Following** feed scope split, and the local AI/vector-search integration pass.
+This checklist reflects the current backend state after Azure deployment, real IGDB integration, admin/user-management, self-service account deletion, the member-profile/feed-social expansion, the **For You / Following** feed scope split, and the deployed AI/vector-search integration.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -28,12 +28,13 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed flow loads in deployed environment
 - [x] IGDB search works in deployed environment
 - [x] IGDB import works in deployed environment
+- [x] Semantic search works in deployed environment
+- [x] AI recommendations work in deployed environment
+- [x] Review-assistant flow works in deployed environment
 
-### Latest local codebase additions ready for next deploy / smoke test
+### Recently completed backend additions
 - [x] `SuperAdmin` role added to the backend role model
-- [x] Admin user list/create endpoints added
-- [x] `SuperAdmin` role-edit endpoint support added
-- [x] Admin user deletion endpoint added
+- [x] Admin user list/create/role-edit endpoints added
 - [x] Self-service account deletion endpoint added
 - [x] Shared user-deletion cleanup path added for dependent records
 - [x] Authenticated member profile endpoint added
@@ -42,7 +43,6 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Feed DTO expanded with social-state fields needed by the frontend
 - [x] Feed scope support added for **For You** vs **Following**
 - [x] Feed tests updated to cover both scopes
-- [x] Temporary one-time `SuperAdmin` bootstrap path added and can be disabled after use
 - [x] OpenAI configuration/options added for chat + embeddings
 - [x] Azure AI Search configuration/options added for vector search
 - [x] AI search index creation/backfill added on startup
@@ -50,9 +50,10 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Real recommendation service wired to the user's own logs/ratings/reviews
 - [x] Real review-assistant service wired to OpenAI
 
-### Important scope note
-- [x] Keep current feature status conservative
-- [x] Distinguish between deployed production status and newer local AI/vector-search work that still needs a production smoke test
+### Important scope notes
+- [x] Treat the live AI/vector-search path as deployed and working
+- [x] Keep current feature status conservative where wiring is still incomplete
+- [ ] Admin delete-user logic is not exposed through a controller route in the current repo snapshot
 
 ---
 
@@ -73,14 +74,15 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] `GET /api/admin/users`
 - [x] `POST /api/admin/users`
 - [x] `PUT /api/admin/users/{userId}/role`
-- [x] `DELETE /api/admin/users/{userId}`
 - [x] Admin can create `User`
 - [x] `SuperAdmin` can create `Admin`
 - [x] `SuperAdmin` can grant `SuperAdmin`
 - [x] Self-role edit is blocked
-- [x] Deleting a `SuperAdmin` through the admin dashboard is blocked
+- [x] Deleting your own account is handled through the self-delete auth flow instead
 - [x] Self-delete blocks removing the last remaining `SuperAdmin`
 - [x] Temporary bootstrap endpoint exists for one-time elevation when explicitly enabled
+- [ ] `DELETE /api/admin/users/{userId}` controller route
+- [ ] Admin dashboard-backed delete-user endpoint flow
 
 ### Games / catalog
 - [x] `Game`
@@ -219,7 +221,7 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Member profile query rules
 - [x] Game search/detail rules
 - [x] IGDB search/import flow rules
-- [ ] Expand automated coverage for the new real AI/vector-search behavior
+- [ ] Dedicated automated coverage for the real OpenAI/Azure AI Search services
 
 ### Controller / integration tests
 - [x] Validation error status codes
@@ -231,11 +233,14 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Review comment-read auth/flow tests
 - [x] Feed integration assertions for both feed scopes
 - [x] Feed integration assertions for expanded social-state fields
+- [x] AI endpoint auth + happy-path flow tests with fake AI services
 
 ### Next backend tests to add
 - [ ] Self-delete account integration tests
-- [ ] Admin delete-user integration tests
 - [ ] `SuperAdmin` grant/delete guardrail tests for the latest account-management additions
+- [ ] Real semantic-search service/result-mapping tests
+- [ ] Real recommendation service tests for already-logged-game exclusion
+- [ ] Real review-assistant response parsing tests
 
 ---
 
@@ -248,18 +253,21 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [x] Deployed frontend can call the deployed API
 - [x] API GitHub Actions workflow is working
 - [x] Production IGDB secrets are configured in Azure
+- [x] Production OpenAI configuration is working
+- [x] Production Azure AI Search configuration is working
+- [x] Semantic search is verified in production
+- [x] Recommendations are verified in production
+- [x] Review assistant is verified in production
 
 ### Keep after deployment
 - [x] Keep secrets out of tracked files
 - [x] Keep Azure config values out of docs when not needed
-- [x] Keep local and deployed smoke tests separate from feature-completion claims
 - [x] Keep local and production databases/configuration separated
 
-### Smoke tests for next deploy
-- [ ] Verify `GET /api/admin/users` works in production for Admin/SuperAdmin
+### Additional smoke tests worth re-running
+- [ ] Verify `GET /api/admin/users` behavior in production for Admin/SuperAdmin
 - [ ] Verify `POST /api/admin/users` respects Admin vs `SuperAdmin` role limits
 - [ ] Verify `PUT /api/admin/users/{userId}/role` works only for `SuperAdmin`
-- [ ] Verify `DELETE /api/admin/users/{userId}` guardrails in production
 - [ ] Verify `POST /api/auth/delete-account` with both failure and success cases in production
 - [ ] Verify `GET /api/profiles/{userName}` for a signed-in user in production
 - [ ] Verify `GET /api/profiles/{userName}/library` returns expected public-library data in production
@@ -267,10 +275,6 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Verify `GET /api/feed?scope=for-you` returns the broader feed in production
 - [ ] Verify `GET /api/feed?scope=following` returns followed-user + self activity in production
 - [ ] Verify invalid `scope` values return `400 Bad Request` in production
-- [ ] Verify Azure AI Search index creation/backfill succeeds in production after deploy
-- [ ] Verify `GET /api/ai/semantic-search` returns live semantic results in production
-- [ ] Verify `POST /api/ai/recommendations` returns non-stub recommendations in production
-- [ ] Verify `POST /api/ai/review-assistant` returns live OpenAI output in production
 
 ---
 
@@ -282,10 +286,10 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - [ ] Add structured logging / production diagnostics hardening
 - [ ] Decide whether the temporary bootstrap controller should remain in the final delivered codebase or be removed after production setup is stable
 
-### Real integration work
-- [ ] Replace AI stubs with real Azure AI implementation
-- [ ] Add Azure AI Search / semantic search backing
-- [ ] Add embedding pipeline / vector search wiring
+### Integration / architecture follow-up
+- [ ] Add dedicated automated coverage for the real AI/vector-search services
+- [ ] Consider incremental catalog re-indexing tied to import/update flows
+- [ ] Decide whether admin delete-user should be exposed as a real controller route for the final scope
 
 ### Potential cleanup / polish
 - [ ] Review production-friendly diagnostics strategy
@@ -303,4 +307,4 @@ Source requirements: `requirements_backlogr_updated.md` and `Assignment5AndFinal
 - Keep business logic in services.
 - Manual DTO mapping is still fine for the current MVP.
 - Do not add file upload/storage for avatars right now.
-- The backend is live and real IGDB integration is in place. The latest local codebase now includes a working AI/vector-search pass, but production should still be treated conservatively until the next deploy + smoke test is complete.
+- The backend is live, real IGDB integration is in place, and the AI/vector-search path is now part of the deployed app state.

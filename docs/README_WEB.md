@@ -2,7 +2,7 @@
 
 Nuxt 3 + Vuetify 3 + TypeScript frontend for **Backlogr** — a Letterboxd-style social web app for video games.
 
-This frontend is deployed in Azure Static Web Apps. The current codebase now includes the landing page, admin/account-management flows, member profile pages, feed review interactions, the new **For You / Following** feed split, and the latest AI wiring pass for browse semantic search, AI picks, and the review assistant.
+This frontend is deployed in Azure Static Web Apps and is currently wired to the deployed `Backlogr.Api`, including the live AI surfaces.
 
 > **Document location:** this file lives in the repo root `docs/` folder.
 
@@ -77,14 +77,13 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
   - user list
   - create user dialog
   - search + role filter
-  - `SuperAdmin` role edit flow
-  - delete-user flow for allowed targets
+  - role edit flow for `SuperAdmin`
 - AI Picks page wired to `POST /api/ai/recommendations`
-- Browse page now supports **Standard** vs **Semantic** search modes
+- Browse page supports **Standard** vs **Semantic** search modes
 - Browse semantic search is wired to `GET /api/ai/semantic-search`
 - Browse page includes a dedicated on-page search panel for clearer discovery UX
 - Review assistant wired to `POST /api/ai/review-assistant`
-- Review assistant action bar polished to make draft/rewrite/shorten/expand/spoiler-safe actions more obvious
+- Review assistant action bar is polished for draft/rewrite/shorten/expand/spoiler-safe actions
 - Local fallback cover asset added for deployment safety
 - Production build succeeds locally
 - Frontend Vitest setup is in place with current service/store/component/page tests
@@ -95,23 +94,17 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - Register, login, library, and feed are working in production at the same level they were working in development.
 - Frontend is successfully calling the deployed API.
 - The production browse catalog is populated from the live backend catalog.
-- The latest AI/browse UX changes have been verified locally and are ready for the next deploy + smoke test pass.
-
-### Latest codebase additions ready for next deploy / smoke test
-- Browse page **Standard / Semantic** search toggle
-- Dedicated browse-page search field + semantic example chips
-- Semantic search results route directly into local game pages
-- AI Picks page copy now reflects live recommendation behavior instead of stubs
-- Log page review-assistant UX polish for clearer assistant actions
-- Vitest coverage added for `/browse` semantic-mode behavior
-- Vitest coverage added for `/recommend` rendering
+- Semantic search is deployed and working through the frontend.
+- AI Picks are deployed and working through the frontend.
+- Review-assistant actions are deployed and working through the frontend.
 
 ### Current known limitations
 - Member profile pages are still **authenticated routes** in the current MVP, not signed-out public pages
 - Game-detail review/activity tabs are not built yet
+- A dedicated “My log” panel on the game-detail page is not built yet
 - Broader frontend test coverage is still incomplete beyond the current covered slices
+- Admin delete-user UI is not currently wired in this repo snapshot
 - AI relevance is currently MVP-level and should improve as the catalog/search metadata gets richer
-- The latest AI/frontend pass still needs production smoke testing after deploy
 
 ---
 
@@ -147,7 +140,7 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 
 ### Feed
 - Feed is live against the backend.
-- The feed page now supports **For You** and **Following** source tabs.
+- The feed page supports **For You** and **Following** source tabs.
 - The selected tab is stored in the route query so refresh/back navigation keeps the same feed source.
 - Review cards use backend-provided like/comment counts and liked/owner state.
 - Review likes and comments are updated inline from the feed page.
@@ -165,6 +158,7 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 - The page uses the merged backend browse endpoint rather than only `GET /api/games`.
 - The UI does **not** visually signal whether a result was already in the local database.
 - Imported results are normalized back into the standard local `gameId` route flow.
+- Semantic mode allows natural-language discovery against the AI search endpoint.
 
 ### Library / logging
 - Library is loaded from live backend data.
@@ -176,12 +170,12 @@ The frontend works locally and is deployed against the current `Backlogr.Api` MV
 ### Admin/account management
 - The admin dashboard is role-gated from the frontend and expects the admin endpoints from the API.
 - `Admin` can create standard users.
-- `SuperAdmin` can create higher-privilege accounts, edit roles, and delete allowed accounts.
-- Protected actions use confirmation dialogs, filtered actions, and disabled states to reduce mistakes.
+- `SuperAdmin` can create higher-privilege accounts and edit roles.
+- The current repo snapshot does **not** include a wired delete-user action in the frontend admin flow.
 
 ### AI surfaces
 - Recommendation page is wired to the live recommendation endpoint.
-- Browse page now exposes semantic search as a first-class UI mode.
+- Browse page exposes semantic search as a first-class UI mode.
 - Log page review assistant is wired to the live review-assistant endpoint.
 - Current AI behavior is intentionally MVP-level and prioritizes a stable end-to-end integration over heavy prompt tuning.
 
@@ -238,12 +232,14 @@ If you are running against the local API during development, point `NUXT_PUBLIC_
 
 ```text
 Backlogr.Web/
+├── assets/
 ├── components/
 ├── layouts/
 ├── middleware/
 ├── pages/
 ├── plugins/
 ├── public/
+├── server/
 ├── services/
 ├── stores/
 ├── tests/
@@ -281,17 +277,16 @@ Current deployment status:
 - API CORS is configured to allow the deployed frontend origin.
 - GitHub Actions CI/CD is configured for the frontend.
 
-Post-deployment validation already completed for the currently deployed build:
+Post-deployment validation already completed for the current deployed build:
 - frontend loads successfully in production
 - API integration works from the deployed frontend
 - core auth/library/feed flows load as expected in production
 - browse is backed by the live catalog/search flow
+- semantic search works in production
+- AI Picks work in production
+- review-assistant actions work in production
 
-Recommended smoke tests for the next deploy:
-- verify `/` landing page behavior for signed-out users
-- verify `/feed?tab=for-you` loads the broader feed correctly
-- verify `/feed?tab=following` loads followed-user + self activity correctly
-- verify the feed tab stays selected after refresh/navigation
+Additional production checks still worth re-running when doing final polish:
 - verify follow/unfollow behavior against the deployed API
 - verify feed review like/comment/edit/delete flows against the deployed API
 - verify `/u/[username]` member-profile load for an authenticated user
@@ -303,16 +298,18 @@ Recommended smoke tests for the next deploy:
 ## Remaining Frontend Work
 
 Recommended next frontend work:
-1. Add semantic search UI.
-2. Finish game-detail review/activity wiring.
+1. Finish game-detail review/activity wiring.
+2. Add a “My log” panel on the game-detail page.
 3. Expand frontend test coverage beyond the current covered slices.
 4. Add broader shared snackbar/toast patterns where useful.
 5. Do a final accessibility/mobile polish pass.
+6. Decide whether the admin dashboard still needs a delete-user action.
+7. Optionally add tasteful visual polish/motion effects after the core UX pass.
 
 ---
 
 ## Notes
 
 - Keep using explicit imports in project code to avoid local Nuxt/VS Code auto-import issues.
-- Do not overstate incomplete features just because deployment is live.
-- The frontend now covers the core social/profile/feed MVP slice, including the new feed split, but semantic search and broader polish/testing still remain.
+- Keep feature claims aligned with what is actually wired in the repo.
+- The frontend now covers the core social/profile/feed MVP slice plus the live AI surfaces, so the best remaining work is polish rather than major feature replacement.
