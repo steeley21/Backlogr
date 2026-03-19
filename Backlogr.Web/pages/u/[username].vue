@@ -260,11 +260,17 @@ watch(
     </v-card>
 
     <template v-if="profile">
-      <v-tabs v-model="activeTab" class="mt-5 profile-tabs" color="primary">
-        <v-tab value="overview">Overview</v-tab>
-        <v-tab value="library">Library</v-tab>
-        <v-tab value="reviews">Reviews</v-tab>
-      </v-tabs>
+      <div class="profile-tab-bar mt-5">
+        <button
+          v-for="tab in ['overview', 'library', 'reviews']"
+          :key="tab"
+          class="profile-tab"
+          :class="{ active: activeTab === tab }"
+          @click="activeTab = tab"
+        >
+          {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
+        </button>
+      </div>
 
       <v-window v-model="activeTab" class="mt-4" touch>
       <v-window-item value="overview">
@@ -455,8 +461,38 @@ watch(
   margin-top: 4px;
 }
 
-.profile-tabs :deep(.v-tab) {
-  text-transform: none;
+.profile-tab-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 4px;
+}
+
+.profile-tab {
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+  white-space: nowrap;
+}
+
+.profile-tab:hover {
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-tab.active {
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .panel {
