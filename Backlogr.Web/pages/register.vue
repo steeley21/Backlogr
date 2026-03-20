@@ -38,6 +38,16 @@ const passwordsMatch = computed(() => {
   return form.value.password === confirmPassword.value
 })
 
+const confirmPasswordErrorMessages = computed(() => {
+  if (confirmPassword.value.length === 0) {
+    return []
+  }
+
+  return passwordsMatch.value
+    ? []
+    : ['Passwords do not match.']
+})
+
 const isFormValid = computed(() => {
   return form.value.userName.trim().length > 0
     && form.value.displayName.trim().length > 0
@@ -128,6 +138,7 @@ async function handleSubmit(): Promise<void> {
           <v-text-field
             v-model="form.password"
             label="Password"
+            name="password"
             type="password"
             variant="solo-filled"
             rounded="xl"
@@ -139,13 +150,14 @@ async function handleSubmit(): Promise<void> {
           <v-text-field
             v-model="confirmPassword"
             label="Confirm password"
+            name="confirmPassword"
             type="password"
             variant="solo-filled"
             rounded="xl"
             hide-details="auto"
             autocomplete="new-password"
-            :error="confirmPassword.length > 0 && !passwordsMatch"
-            :error-messages="confirmPassword.length > 0 && !passwordsMatch ? ['Passwords do not match.'] : []"
+            :readonly="isSubmitting"
+            :error-messages="confirmPasswordErrorMessages"
           />
 
           <div class="actions mt-5">
