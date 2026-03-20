@@ -17,9 +17,7 @@ export default defineNuxtConfig({
     }
   },
   compatibilityDate: '2026-03-12',
-  plugins: [
-    '~/plugins/vuetify.client.ts',
-  ],
+  
   vuetify: {
     vuetifyOptions: {
       theme: {
