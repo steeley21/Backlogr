@@ -19,7 +19,7 @@ You can either create your own account in the live app or sign in with the demo 
 - **Username:** `admin`
 - **Password:** `Horse1234!`
 
-> Provided for class/demo convenience. Credentials should be rotated or removed after the course final.
+> Provided for class/demo convenience. 
 
 ## What Backlogr does
 
