@@ -10,6 +10,8 @@ The project was built as a full-stack course final and is deployed in Azure with
 - **API:** https://backlograpi.azurewebsites.net
 - **Swagger:** https://backlograpi.azurewebsites.net/swagger
 
+> **Note:** Backlogr is deployed on free/student Azure resources for this course project, so the first page load or first API request may be slow while the services wake up. If the app feels sluggish at first, please give it a moment and try again.
+
 ## Try it out
 
 You can either create your own account in the live app or sign in with the demo account below.
